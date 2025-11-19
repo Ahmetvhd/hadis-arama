@@ -116,17 +116,75 @@ function loadHadisData(): Hadis[] {
   }
 }
 
+// Alim isimleri ve arama terimleri
+const ALIM_ISIMLERI: Record<string, string> = {
+  'buhari': 'Sahih-i Buhari',
+  'muslim': 'Sahih-i Müslim',
+  'tirmizi': 'Sünen Tirmizi',
+  'ebu-davud': 'Sünen Ebu Davud',
+  'ibn-mace': 'Sünen İbn-i Mace',
+  'malik': 'Muvatta Malik',
+  'ahmed': 'Müsned Ahmed',
+};
+
+const ALIM_ARAMA_TERIMLERI: Record<string, string[]> = {
+  'buhari': ['buhari', 'buharî', 'buhârî', 'buhari\'nin', 'buhari\'de'],
+  'muslim': ['müslim', 'muslim', 'müslim\'in', 'muslim\'in', 'müslim\'de', 'muslim\'de', 'sahih-i müslim'],
+  'tirmizi': ['tirmizi', 'tirmizî', 'tirmizi\'nin', 'tirmizi\'de', 'sünen tirmizi'],
+  'ebu-davud': ['ebu davud', 'ebu davud\'un', 'ebû davud', 'ebu davud\'da', 'sünen ebu davud'],
+  'ibn-mace': ['ibn-i mace', 'ibn mace', 'ibn-i maceh', 'ibn maceh', 'ibn-i mace\'nin', 'ibn-i mace\'de', 'sünen ibn-i mace'],
+  'malik': ['muvatta', 'malik', 'malik\'in', 'malik\'de', 'muvatta malik'],
+  'ahmed': ['müsned', 'ahmed', 'ahmed b. hanbel', 'ahmed bin hanbel', 'ahmed\'in', 'müsned ahmed'],
+};
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q') || '';
   const kitapNo = searchParams.get('kitap') || '';
   const bolumNo = searchParams.get('bolum') || '';
+  const alim = searchParams.get('alim') || '';
   const listKitaplar = searchParams.get('listKitaplar') === 'true';
   const listBolumler = searchParams.get('listBolumler') === 'true';
+  const listAlimler = searchParams.get('listAlimler') === 'true';
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
 
   const allHadis = loadHadisData();
+  
+  // Alimler listesi isteniyorsa
+  if (listAlimler) {
+    const alimMap = new Map<string, number>();
+    
+    Object.keys(ALIM_ISIMLERI).forEach((alimId) => {
+      const aramaTerimleri = ALIM_ARAMA_TERIMLERI[alimId] || [];
+      let count = 0;
+      
+      allHadis.forEach((hadis) => {
+        const searchText = `${hadis.turkce} ${hadis.aciklama} ${hadis.bolumBaslik}`.toLowerCase();
+        const found = aramaTerimleri.some(terim => searchText.includes(terim.toLowerCase()));
+        if (found) {
+          count++;
+        }
+      });
+      
+      if (count > 0) {
+        alimMap.set(alimId, count);
+      }
+    });
+    
+    const alimList = Array.from(alimMap.entries())
+      .map(([id, count]) => ({
+        id,
+        name: ALIM_ISIMLERI[id],
+        hadisSayisi: count,
+      }))
+      .sort((a, b) => b.hadisSayisi - a.hadisSayisi);
+    
+    return NextResponse.json({
+      alimler: alimList,
+      total: alimList.length,
+    });
+  }
   
   // Kitaplar listesi isteniyorsa
   if (listKitaplar) {
@@ -279,6 +337,15 @@ export async function GET(request: NextRequest) {
   // Bölüm filtresi
   if (bolumNo) {
     filtered = filtered.filter((hadis) => hadis.bolumNo === bolumNo);
+  }
+
+  // Alim filtresi
+  if (alim && ALIM_ARAMA_TERIMLERI[alim]) {
+    const aramaTerimleri = ALIM_ARAMA_TERIMLERI[alim];
+    filtered = filtered.filter((hadis) => {
+      const searchText = `${hadis.turkce} ${hadis.aciklama} ${hadis.bolumBaslik}`.toLowerCase();
+      return aramaTerimleri.some(terim => searchText.includes(terim.toLowerCase()));
+    });
   }
 
   // Sayfalama
