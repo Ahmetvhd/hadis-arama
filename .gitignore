@@ -34,6 +34,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Large data file - too big for GitHub
+# Large data file - too big for GitHub (using hadislerjson folder instead)
 hadisler.json
 
