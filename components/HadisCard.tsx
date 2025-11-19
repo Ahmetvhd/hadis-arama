@@ -64,7 +64,7 @@ function cleanArabicText(text: string): string {
     .trim();
 }
 
-const MAX_PREVIEW_LENGTH = 500;
+const MAX_PREVIEW_LENGTH = 800; // Daha uzun önizleme için artırıldı
 
 export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
   const [expandedTurkce, setExpandedTurkce] = useState(false);
