@@ -11,7 +11,6 @@ interface Hadis {
   arapca: string;
   turkce: string;
   aciklama: string;
-  ravi?: string;
   [key: string]: any;
 }
 
@@ -44,59 +43,6 @@ function prepareSearchText(text: string): string {
     .trim();
 }
 
-// Ravi ismini Türkçe metinden çıkar
-function extractRavi(turkceText: string): string {
-  if (!turkceText) return '';
-  
-  // Metnin ilk 500 karakterini al (ravi genellikle başta geçer)
-  const firstPart = turkceText.substring(0, 500);
-  
-  // Ravi kalıpları - daha kapsamlı
-  const raviPatterns = [
-    // "Ebu Hureyre (Radiyallahu anh)'den" formatı
-    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)\s+\(Radiyallahu\s+anh\)'?den/gi,
-    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)\s+\(Radiyallahu\s+anh\)'?dan/gi,
-    // "Ebu Hureyre r.a.'den" formatı
-    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)\s+r\.a\.'?den/gi,
-    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)\s+r\.a\.'?dan/gi,
-    // "Ebu Hureyre'den rivayet" formatı
-    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)'?den\s+rivayet/gi,
-    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)'?dan\s+rivayet/gi,
-    // "Ebu Hureyre'den" formatı (basit)
-    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)'?den\s+şöyle/gi,
-    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)'?dan\s+şöyle/gi,
-  ];
-  
-  for (const pattern of raviPatterns) {
-    const match = firstPart.match(pattern);
-    if (match && match[1]) {
-      let ravi = match[1].trim();
-      
-      // Parantez içindeki ek bilgileri temizle (ama önce kontrol et)
-      const parantezMatch = ravi.match(/^(.+?)\s*\([^)]+\)$/);
-      if (parantezMatch) {
-        ravi = parantezMatch[1].trim();
-      }
-      
-      // "r.a." gibi kısaltmaları temizle
-      ravi = ravi.replace(/\s+r\.a\./gi, '').trim();
-      
-      // Geçersiz kelimeleri filtrele
-      const invalidWords = ['resulullah', 'nebi', 'peygamber', 'sallallahu', 'aleyhi', 'sellem', 'rivayet', 'edildiğine'];
-      const words = ravi.toLowerCase().split(/\s+/);
-      if (words.some(w => invalidWords.includes(w))) {
-        continue;
-      }
-      
-      if (ravi.length > 2 && ravi.length < 80) {
-        // İlk harfi büyük yap
-        return ravi.charAt(0).toUpperCase() + ravi.slice(1).toLowerCase();
-      }
-    }
-  }
-  
-  return '';
-}
 
 function loadHadisData(): Hadis[] {
   if (hadisData) {
@@ -149,7 +95,6 @@ function loadHadisData(): Hadis[] {
         const bolumKey = `${kitapNo}-${bolumNo}`;
         
         // Veri yapısına göre hadis bilgilerini çıkar
-        const turkceText = String(item[2] || '');
         const hadis: Hadis = {
           id: String(item[0] || index),
           kitapNo,
@@ -157,9 +102,8 @@ function loadHadisData(): Hadis[] {
           bolumBaslik: bolumBasliklari?.get(bolumKey) || '',
           hadisNo: String(item[8] || ''),
           arapca: String(item[1] || ''),
-          turkce: turkceText,
+          turkce: String(item[2] || ''),
           aciklama: String(item[3] || ''),
-          ravi: extractRavi(turkceText),
         };
         return hadis;
       })
@@ -177,33 +121,10 @@ export async function GET(request: NextRequest) {
   const query = searchParams.get('q') || '';
   const kitapNo = searchParams.get('kitap') || '';
   const bolumNo = searchParams.get('bolum') || '';
-  const ravi = searchParams.get('ravi') || '';
-  const listRaviler = searchParams.get('listRaviler') === 'true';
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
 
   const allHadis = loadHadisData();
-  
-  // Ravi listesi isteniyorsa
-  if (listRaviler) {
-    const raviMap = new Map<string, number>();
-    allHadis.forEach((hadis) => {
-      if (hadis.ravi && hadis.ravi.trim()) {
-        const count = raviMap.get(hadis.ravi) || 0;
-        raviMap.set(hadis.ravi, count + 1);
-      }
-    });
-    
-    const raviList = Array.from(raviMap.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .sort((a, b) => a.name.localeCompare(b.name, 'tr'));
-    
-    return NextResponse.json({
-      raviler: raviList,
-      total: raviList.length,
-    });
-  }
   
   let filtered = allHadis;
 
@@ -289,15 +210,6 @@ export async function GET(request: NextRequest) {
   // Bölüm filtresi
   if (bolumNo) {
     filtered = filtered.filter((hadis) => hadis.bolumNo === bolumNo);
-  }
-
-  // Ravi filtresi
-  if (ravi) {
-    const normalizedRavi = prepareSearchText(ravi);
-    filtered = filtered.filter((hadis) => {
-      if (!hadis.ravi) return false;
-      return prepareSearchText(hadis.ravi).includes(normalizedRavi);
-    });
   }
 
   // Sayfalama

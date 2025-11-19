@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, FileText } from 'lucide-react';
-import Link from 'next/link';
 
 interface Hadis {
   id: string;
@@ -14,7 +13,6 @@ interface Hadis {
   arapca: string;
   turkce: string;
   aciklama: string;
-  ravi?: string;
 }
 
 interface HadisCardProps {
@@ -80,13 +78,6 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
               />
             </CardTitle>
             <div className="flex flex-wrap gap-2 mt-2">
-              {hadis.ravi && (
-                <Link href={`/ravi/${encodeURIComponent(hadis.ravi)}`}>
-                  <Badge variant="default" className="bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer">
-                    Ravi: {hadis.ravi}
-                  </Badge>
-                </Link>
-              )}
               {hadis.kitapNo && (
                 <Badge variant="secondary">Kitap: {hadis.kitapNo}</Badge>
               )}
