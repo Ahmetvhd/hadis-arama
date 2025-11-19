@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, BookOpen, FileText, Loader2, GraduationCap } from 'lucide-react';
+import { Search, BookOpen, FileText, Loader2, GraduationCap, Map } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -96,7 +96,7 @@ export default function Home() {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
             Güçlü arama özellikleri ile hadisleri kolayca bulun
           </p>
-          <div className="flex gap-3 justify-center">
+          <div className="flex gap-3 justify-center flex-wrap">
             <Link href="/kitaplar">
               <Button variant="outline" className="gap-2">
                 <BookOpen className="h-4 w-4" />
@@ -107,6 +107,12 @@ export default function Home() {
               <Button variant="outline" className="gap-2">
                 <GraduationCap className="h-4 w-4" />
                 Hadis Alimleri
+              </Button>
+            </Link>
+            <Link href="/yol-haritasi">
+              <Button variant="outline" className="gap-2">
+                <Map className="h-4 w-4" />
+                Yol Haritası
               </Button>
             </Link>
           </div>

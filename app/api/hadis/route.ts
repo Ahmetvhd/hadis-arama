@@ -137,15 +137,46 @@ const ALIM_ARAMA_TERIMLERI: Record<string, string[]> = {
   'ahmed': ['müsned', 'ahmed', 'ahmed b. hanbel', 'ahmed bin hanbel', 'ahmed\'in', 'müsned ahmed'],
 };
 
+// Kategori isimleri ve arama terimleri
+const KATEGORI_ISIMLERI: Record<string, string> = {
+  'ilim': 'İlim',
+  'dua': 'Dua',
+  'iman': 'İman',
+  'ibadet': 'İbadet',
+  'selam': 'Selam',
+  'zikir': 'Zikir',
+  'tevekkul': 'Tevekkül',
+  'fitrat': 'Fıtrat',
+  'tevbe': 'Tevbe',
+  'sirk': 'Şirk',
+  'tevhid': 'Tevhid',
+};
+
+const KATEGORI_ARAMA_TERIMLERI: Record<string, string[]> = {
+  'ilim': ['ilim', 'ilmi', 'alim', 'alimler', 'ilim öğrenmek', 'ilim tahsil', 'ilim ehli'],
+  'dua': ['dua', 'dua etmek', 'dua edin', 'dua eder', 'dua edelim', 'dua ediyor'],
+  'iman': ['iman', 'imân', 'iman etmek', 'mümin', 'müminler', 'iman eden'],
+  'ibadet': ['ibadet', 'ibadet etmek', 'ibadet edin', 'ibadet eder', 'ibadetler'],
+  'selam': ['selam', 'selâm', 'selam vermek', 'selam verin', 'selamlaşmak'],
+  'zikir': ['zikir', 'zikretmek', 'zikir edin', 'zikir eder', 'zikirler'],
+  'tevekkul': ['tevekkül', 'tevekkül etmek', 'tevekkül edin', 'tevekkül eder'],
+  'fitrat': ['fıtrat', 'fitrat', 'fıtrat üzere', 'fıtrat üzerine'],
+  'tevbe': ['tevbe', 'tevbe etmek', 'tevbe edin', 'tevbe eder', 'tevbe eden'],
+  'sirk': ['şirk', 'sirk', 'şirk koşmak', 'şirk koşan', 'şirk koşmayın'],
+  'tevhid': ['tevhid', 'tevhid inancı', 'tevhid akidesi', 'tevhid ehli'],
+};
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('q') || '';
   const kitapNo = searchParams.get('kitap') || '';
   const bolumNo = searchParams.get('bolum') || '';
   const alim = searchParams.get('alim') || '';
+  const kategori = searchParams.get('kategori') || '';
   const listKitaplar = searchParams.get('listKitaplar') === 'true';
   const listBolumler = searchParams.get('listBolumler') === 'true';
   const listAlimler = searchParams.get('listAlimler') === 'true';
+  const listKategoriler = searchParams.get('listKategoriler') === 'true';
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
 
@@ -183,6 +214,41 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       alimler: alimList,
       total: alimList.length,
+    });
+  }
+  
+  // Kategoriler listesi isteniyorsa
+  if (listKategoriler) {
+    const kategoriMap = new Map<string, number>();
+    
+    Object.keys(KATEGORI_ISIMLERI).forEach((kategoriId) => {
+      const aramaTerimleri = KATEGORI_ARAMA_TERIMLERI[kategoriId] || [];
+      let count = 0;
+      
+      allHadis.forEach((hadis) => {
+        const searchText = `${hadis.turkce} ${hadis.aciklama} ${hadis.bolumBaslik}`.toLowerCase();
+        const found = aramaTerimleri.some(terim => searchText.includes(terim.toLowerCase()));
+        if (found) {
+          count++;
+        }
+      });
+      
+      if (count > 0) {
+        kategoriMap.set(kategoriId, count);
+      }
+    });
+    
+    const kategoriList = Array.from(kategoriMap.entries())
+      .map(([id, count]) => ({
+        id,
+        name: KATEGORI_ISIMLERI[id],
+        hadisSayisi: count,
+      }))
+      .sort((a, b) => b.hadisSayisi - a.hadisSayisi);
+    
+    return NextResponse.json({
+      kategoriler: kategoriList,
+      total: kategoriList.length,
     });
   }
   
@@ -342,6 +408,15 @@ export async function GET(request: NextRequest) {
   // Alim filtresi
   if (alim && ALIM_ARAMA_TERIMLERI[alim]) {
     const aramaTerimleri = ALIM_ARAMA_TERIMLERI[alim];
+    filtered = filtered.filter((hadis) => {
+      const searchText = `${hadis.turkce} ${hadis.aciklama} ${hadis.bolumBaslik}`.toLowerCase();
+      return aramaTerimleri.some(terim => searchText.includes(terim.toLowerCase()));
+    });
+  }
+
+  // Kategori filtresi
+  if (kategori && KATEGORI_ARAMA_TERIMLERI[kategori]) {
+    const aramaTerimleri = KATEGORI_ARAMA_TERIMLERI[kategori];
     filtered = filtered.filter((hadis) => {
       const searchText = `${hadis.turkce} ${hadis.aciklama} ${hadis.bolumBaslik}`.toLowerCase();
       return aramaTerimleri.some(terim => searchText.includes(terim.toLowerCase()));
