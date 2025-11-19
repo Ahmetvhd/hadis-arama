@@ -121,10 +121,79 @@ export async function GET(request: NextRequest) {
   const query = searchParams.get('q') || '';
   const kitapNo = searchParams.get('kitap') || '';
   const bolumNo = searchParams.get('bolum') || '';
+  const listKitaplar = searchParams.get('listKitaplar') === 'true';
+  const listBolumler = searchParams.get('listBolumler') === 'true';
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
 
   const allHadis = loadHadisData();
+  
+  // Kitaplar listesi isteniyorsa
+  if (listKitaplar) {
+    const kitapMap = new Map<string, { name: string; bolumSayisi: number; hadisSayisi: number }>();
+    
+    allHadis.forEach((hadis) => {
+      if (hadis.kitapNo) {
+        const existing = kitapMap.get(hadis.kitapNo);
+        const bolumler = new Set<string>();
+        
+        // Aynı kitaptaki tüm hadisleri topla
+        allHadis.forEach((h) => {
+          if (h.kitapNo === hadis.kitapNo && h.bolumNo) {
+            bolumler.add(h.bolumNo);
+          }
+        });
+        
+        if (!existing) {
+          const hadisSayisi = allHadis.filter((h) => h.kitapNo === hadis.kitapNo).length;
+          kitapMap.set(hadis.kitapNo, {
+            name: `Kitap ${hadis.kitapNo}`,
+            bolumSayisi: bolumler.size,
+            hadisSayisi,
+          });
+        }
+      }
+    });
+    
+    const kitapList = Array.from(kitapMap.entries())
+      .map(([no, info]) => ({ no, ...info }))
+      .sort((a, b) => parseInt(a.no) - parseInt(b.no));
+    
+    return NextResponse.json({
+      kitaplar: kitapList,
+      total: kitapList.length,
+    });
+  }
+  
+  // Bölümler listesi isteniyorsa (kitap numarasına göre)
+  if (listBolumler && kitapNo) {
+    const bolumMap = new Map<string, { name: string; hadisSayisi: number }>();
+    
+    allHadis.forEach((hadis) => {
+      if (hadis.kitapNo === kitapNo && hadis.bolumNo) {
+        const existing = bolumMap.get(hadis.bolumNo);
+        if (!existing) {
+          const hadisSayisi = allHadis.filter(
+            (h) => h.kitapNo === kitapNo && h.bolumNo === hadis.bolumNo
+          ).length;
+          bolumMap.set(hadis.bolumNo, {
+            name: hadis.bolumBaslik || `Bölüm ${hadis.bolumNo}`,
+            hadisSayisi,
+          });
+        }
+      }
+    });
+    
+    const bolumList = Array.from(bolumMap.entries())
+      .map(([no, info]) => ({ no, ...info }))
+      .sort((a, b) => parseInt(a.no) - parseInt(b.no));
+    
+    return NextResponse.json({
+      bolumler: bolumList,
+      total: bolumList.length,
+      kitapNo,
+    });
+  }
   
   let filtered = allHadis;
 
