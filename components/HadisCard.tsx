@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, FileText } from 'lucide-react';
+import Link from 'next/link';
 
 interface Hadis {
   id: string;
@@ -13,6 +14,7 @@ interface Hadis {
   arapca: string;
   turkce: string;
   aciklama: string;
+  ravi?: string;
 }
 
 interface HadisCardProps {
@@ -36,15 +38,31 @@ function highlightText(text: string, query: string): string {
 
 function cleanText(text: string): string {
   return text
-    .replace(/\\r\\n/g, '\n')
+    .replace(/\\r\\n/g, ' ')
+    .replace(/\\n/g, ' ')
+    .replace(/\r\n/g, ' ')
+    .replace(/\n/g, ' ')
     .replace(/\\'/g, "'")
     .replace(/\\"/g, '"')
+    .replace(/\s+/g, ' ') // Birden fazla boşluğu tek boşluğa çevir
+    .trim();
+}
+
+function cleanArabicText(text: string): string {
+  return text
+    .replace(/\\r\\n/g, ' ')
+    .replace(/\\n/g, ' ')
+    .replace(/\r\n/g, ' ')
+    .replace(/\n/g, ' ')
+    .replace(/\\'/g, "'")
+    .replace(/\\"/g, '"')
+    .replace(/\s+/g, ' ') // Birden fazla boşluğu tek boşluğa çevir
     .trim();
 }
 
 export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
   const cleanedTurkce = cleanText(hadis.turkce);
-  const cleanedArapca = cleanText(hadis.arapca);
+  const cleanedArapca = cleanArabicText(hadis.arapca);
   const cleanedAciklama = cleanText(hadis.aciklama);
   const cleanedBolumBaslik = cleanText(hadis.bolumBaslik);
 
@@ -62,6 +80,13 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
               />
             </CardTitle>
             <div className="flex flex-wrap gap-2 mt-2">
+              {hadis.ravi && (
+                <Link href={`/ravi/${encodeURIComponent(hadis.ravi)}`}>
+                  <Badge variant="default" className="bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer">
+                    Ravi: {hadis.ravi}
+                  </Badge>
+                </Link>
+              )}
               {hadis.kitapNo && (
                 <Badge variant="secondary">Kitap: {hadis.kitapNo}</Badge>
               )}
@@ -84,7 +109,7 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
               Türkçe Metin
             </h4>
             <p
-              className="text-foreground leading-relaxed whitespace-pre-wrap"
+              className="text-foreground leading-relaxed"
               dangerouslySetInnerHTML={{
                 __html: highlightText(cleanedTurkce, searchQuery),
               }}
@@ -97,7 +122,7 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
           <div>
             <h4 className="font-semibold mb-2">Arapça Metin</h4>
             <p
-              className="text-right text-lg leading-relaxed whitespace-pre-wrap font-arabic"
+              className="text-right text-lg leading-relaxed font-arabic"
               dir="rtl"
               style={{ fontFamily: 'Arial, sans-serif' }}
             >
@@ -111,7 +136,7 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
           <div className="pt-4 border-t">
             <h4 className="font-semibold mb-2">Açıklama</h4>
             <p
-              className="text-muted-foreground leading-relaxed whitespace-pre-wrap text-sm"
+              className="text-muted-foreground leading-relaxed text-sm"
               dangerouslySetInnerHTML={{
                 __html: highlightText(cleanedAciklama.substring(0, 500), searchQuery),
               }}

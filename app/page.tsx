@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, BookOpen, FileText, Loader2 } from 'lucide-react';
+import { Search, BookOpen, FileText, Loader2, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import HadisCard from '@/components/HadisCard';
+import Link from 'next/link';
 
 interface Hadis {
   id: string;
@@ -92,9 +93,15 @@ export default function Home() {
             <BookOpen className="h-12 w-12 text-primary" />
             <h1 className="text-5xl font-bold text-foreground">Hadis Arama</h1>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
             Güçlü arama özellikleri ile hadisleri kolayca bulun
           </p>
+          <Link href="/raviler">
+            <Button variant="outline" className="gap-2">
+              <Users className="h-4 w-4" />
+              Ravileri Görüntüle
+            </Button>
+          </Link>
         </div>
 
         {/* Search Bar */}
