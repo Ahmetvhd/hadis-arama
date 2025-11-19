@@ -37,6 +37,7 @@ function highlightText(text: string, query: string): string {
 }
 
 function cleanText(text: string): string {
+  if (!text) return '';
   return text
     .replace(/\\r\\n/g, ' ')
     .replace(/\\n/g, ' ')
@@ -44,11 +45,13 @@ function cleanText(text: string): string {
     .replace(/\n/g, ' ')
     .replace(/\\'/g, "'")
     .replace(/\\"/g, '"')
+    .replace(/\\t/g, ' ')
     .replace(/\s+/g, ' ') // Birden fazla boşluğu tek boşluğa çevir
     .trim();
 }
 
 function cleanArabicText(text: string): string {
+  if (!text) return '';
   return text
     .replace(/\\r\\n/g, ' ')
     .replace(/\\n/g, ' ')
@@ -56,6 +59,7 @@ function cleanArabicText(text: string): string {
     .replace(/\n/g, ' ')
     .replace(/\\'/g, "'")
     .replace(/\\"/g, '"')
+    .replace(/\\t/g, ' ')
     .replace(/\s+/g, ' ') // Birden fazla boşluğu tek boşluğa çevir
     .trim();
 }
