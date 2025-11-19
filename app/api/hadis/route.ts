@@ -191,8 +191,18 @@ export async function GET(request: NextRequest) {
       let count = 0;
       
       allHadis.forEach((hadis) => {
-        const searchText = `${hadis.turkce} ${hadis.aciklama} ${hadis.bolumBaslik}`.toLowerCase();
-        const found = aramaTerimleri.some(terim => searchText.includes(terim.toLowerCase()));
+        const turkceText = hadis.turkce.toLowerCase();
+        const aciklamaText = hadis.aciklama.toLowerCase();
+        const bolumText = hadis.bolumBaslik.toLowerCase();
+        
+        // Önce Türkçe metinde ara, sonra açıklamada
+        const found = aramaTerimleri.some(terim => {
+          const terimLower = terim.toLowerCase();
+          return turkceText.includes(terimLower) || 
+                 aciklamaText.includes(terimLower) || 
+                 bolumText.includes(terimLower);
+        });
+        
         if (found) {
           count++;
         }
@@ -226,8 +236,18 @@ export async function GET(request: NextRequest) {
       let count = 0;
       
       allHadis.forEach((hadis) => {
-        const searchText = `${hadis.turkce} ${hadis.aciklama} ${hadis.bolumBaslik}`.toLowerCase();
-        const found = aramaTerimleri.some(terim => searchText.includes(terim.toLowerCase()));
+        const turkceText = hadis.turkce.toLowerCase();
+        const aciklamaText = hadis.aciklama.toLowerCase();
+        const bolumText = hadis.bolumBaslik.toLowerCase();
+        
+        // Önce Türkçe metinde ara, sonra açıklamada
+        const found = aramaTerimleri.some(terim => {
+          const terimLower = terim.toLowerCase();
+          return turkceText.includes(terimLower) || 
+                 aciklamaText.includes(terimLower) || 
+                 bolumText.includes(terimLower);
+        });
+        
         if (found) {
           count++;
         }
@@ -408,19 +428,67 @@ export async function GET(request: NextRequest) {
   // Alim filtresi
   if (alim && ALIM_ARAMA_TERIMLERI[alim]) {
     const aramaTerimleri = ALIM_ARAMA_TERIMLERI[alim];
-    filtered = filtered.filter((hadis) => {
-      const searchText = `${hadis.turkce} ${hadis.aciklama} ${hadis.bolumBaslik}`.toLowerCase();
-      return aramaTerimleri.some(terim => searchText.includes(terim.toLowerCase()));
+    const hadisWithPriority = filtered.map((hadis) => {
+      const turkceText = hadis.turkce.toLowerCase();
+      const aciklamaText = hadis.aciklama.toLowerCase();
+      const bolumText = hadis.bolumBaslik.toLowerCase();
+      
+      // Önce Türkçe metinde ara
+      const turkceMatch = aramaTerimleri.some(terim => turkceText.includes(terim.toLowerCase()));
+      // Sonra açıklamada ara
+      const aciklamaMatch = aramaTerimleri.some(terim => aciklamaText.includes(terim.toLowerCase()));
+      // Bölüm başlığında ara
+      const bolumMatch = aramaTerimleri.some(terim => bolumText.includes(terim.toLowerCase()));
+      
+      if (turkceMatch || aciklamaMatch || bolumMatch) {
+        // Öncelik: Türkçe metin > Açıklama > Bölüm başlığı
+        let priority = 0;
+        if (turkceMatch) priority = 3;
+        else if (aciklamaMatch) priority = 2;
+        else if (bolumMatch) priority = 1;
+        
+        return { hadis, priority, match: true };
+      }
+      return { hadis, priority: 0, match: false };
     });
+    
+    filtered = hadisWithPriority
+      .filter(item => item.match)
+      .sort((a, b) => b.priority - a.priority)
+      .map(item => item.hadis);
   }
 
   // Kategori filtresi
   if (kategori && KATEGORI_ARAMA_TERIMLERI[kategori]) {
     const aramaTerimleri = KATEGORI_ARAMA_TERIMLERI[kategori];
-    filtered = filtered.filter((hadis) => {
-      const searchText = `${hadis.turkce} ${hadis.aciklama} ${hadis.bolumBaslik}`.toLowerCase();
-      return aramaTerimleri.some(terim => searchText.includes(terim.toLowerCase()));
+    const hadisWithPriority = filtered.map((hadis) => {
+      const turkceText = hadis.turkce.toLowerCase();
+      const aciklamaText = hadis.aciklama.toLowerCase();
+      const bolumText = hadis.bolumBaslik.toLowerCase();
+      
+      // Önce Türkçe metinde ara
+      const turkceMatch = aramaTerimleri.some(terim => turkceText.includes(terim.toLowerCase()));
+      // Sonra açıklamada ara
+      const aciklamaMatch = aramaTerimleri.some(terim => aciklamaText.includes(terim.toLowerCase()));
+      // Bölüm başlığında ara
+      const bolumMatch = aramaTerimleri.some(terim => bolumText.includes(terim.toLowerCase()));
+      
+      if (turkceMatch || aciklamaMatch || bolumMatch) {
+        // Öncelik: Türkçe metin > Açıklama > Bölüm başlığı
+        let priority = 0;
+        if (turkceMatch) priority = 3;
+        else if (aciklamaMatch) priority = 2;
+        else if (bolumMatch) priority = 1;
+        
+        return { hadis, priority, match: true };
+      }
+      return { hadis, priority: 0, match: false };
     });
+    
+    filtered = hadisWithPriority
+      .filter(item => item.match)
+      .sort((a, b) => b.priority - a.priority)
+      .map(item => item.hadis);
   }
 
   // Sayfalama
