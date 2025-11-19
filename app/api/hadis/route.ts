@@ -48,26 +48,49 @@ function prepareSearchText(text: string): string {
 function extractRavi(turkceText: string): string {
   if (!turkceText) return '';
   
-  // Ravi kalıpları: "Ebu Hureyre r.a.'den", "Ebu Musa (el-Eşari) r.a.'den", vb.
+  // Metnin ilk 500 karakterini al (ravi genellikle başta geçer)
+  const firstPart = turkceText.substring(0, 500);
+  
+  // Ravi kalıpları - daha kapsamlı
   const raviPatterns = [
-    /([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)*(?:\s*\([^)]+\))?)\s+r\.a\.'?den/gi,
-    /([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)*(?:\s*\([^)]+\))?)\s+r\.a\.'?dan/gi,
-    /([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)*(?:\s*\([^)]+\))?)\s+\(Radiyallahu\s+anh\)'?den/gi,
-    /([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)*(?:\s*\([^)]+\))?)\s+\(Radiyallahu\s+anh\)'?dan/gi,
-    /([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)*(?:\s*\([^)]+\))?)\s+'den\s+rivayet/gi,
-    /([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)*(?:\s*\([^)]+\))?)\s+'dan\s+rivayet/gi,
+    // "Ebu Hureyre (Radiyallahu anh)'den" formatı
+    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)\s+\(Radiyallahu\s+anh\)'?den/gi,
+    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)\s+\(Radiyallahu\s+anh\)'?dan/gi,
+    // "Ebu Hureyre r.a.'den" formatı
+    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)\s+r\.a\.'?den/gi,
+    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)\s+r\.a\.'?dan/gi,
+    // "Ebu Hureyre'den rivayet" formatı
+    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)'?den\s+rivayet/gi,
+    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)'?dan\s+rivayet/gi,
+    // "Ebu Hureyre'den" formatı (basit)
+    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)'?den\s+şöyle/gi,
+    /([A-ZÇĞİÖŞÜİ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜİ][a-zçğıöşü]+)*(?:\s+[a-zçğıöşü]+)*)'?dan\s+şöyle/gi,
   ];
   
   for (const pattern of raviPatterns) {
-    const match = turkceText.match(pattern);
-    if (match && match[0]) {
-      let ravi = match[1] || match[0];
-      // Parantez içindeki ek bilgileri temizle
-      ravi = ravi.replace(/\s*\([^)]+\)/g, '').trim();
+    const match = firstPart.match(pattern);
+    if (match && match[1]) {
+      let ravi = match[1].trim();
+      
+      // Parantez içindeki ek bilgileri temizle (ama önce kontrol et)
+      const parantezMatch = ravi.match(/^(.+?)\s*\([^)]+\)$/);
+      if (parantezMatch) {
+        ravi = parantezMatch[1].trim();
+      }
+      
       // "r.a." gibi kısaltmaları temizle
       ravi = ravi.replace(/\s+r\.a\./gi, '').trim();
-      if (ravi.length > 2 && ravi.length < 100) {
-        return ravi;
+      
+      // Geçersiz kelimeleri filtrele
+      const invalidWords = ['resulullah', 'nebi', 'peygamber', 'sallallahu', 'aleyhi', 'sellem', 'rivayet', 'edildiğine'];
+      const words = ravi.toLowerCase().split(/\s+/);
+      if (words.some(w => invalidWords.includes(w))) {
+        continue;
+      }
+      
+      if (ravi.length > 2 && ravi.length < 80) {
+        // İlk harfi büyük yap
+        return ravi.charAt(0).toUpperCase() + ravi.slice(1).toLowerCase();
       }
     }
   }

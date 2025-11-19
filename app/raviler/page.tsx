@@ -39,14 +39,44 @@ export default function RavilerPage() {
     try {
       const response = await fetch('/api/hadis?listRaviler=true');
       const data = await response.json();
-      setRaviler(data.raviler || []);
-      setFilteredRaviler(data.raviler || []);
+      const sortedRaviler = (data.raviler || []).sort((a: Ravi, b: Ravi) => 
+        a.name.localeCompare(b.name, 'tr')
+      );
+      setRaviler(sortedRaviler);
+      setFilteredRaviler(sortedRaviler);
     } catch (error) {
       console.error('Raviler yüklenirken hata:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Alfabetik gruplara ayır
+  const groupedRaviler = filteredRaviler.reduce((acc, ravi) => {
+    const firstLetter = ravi.name.charAt(0).toUpperCase();
+    // Türkçe karakterleri normalize et
+    const normalizedLetter = firstLetter
+      .replace(/İ/g, 'I')
+      .replace(/ı/g, 'I')
+      .replace(/Ş/g, 'S')
+      .replace(/ş/g, 'S')
+      .replace(/Ğ/g, 'G')
+      .replace(/ğ/g, 'G')
+      .replace(/Ü/g, 'U')
+      .replace(/ü/g, 'U')
+      .replace(/Ö/g, 'O')
+      .replace(/ö/g, 'O')
+      .replace(/Ç/g, 'C')
+      .replace(/ç/g, 'C');
+    
+    if (!acc[normalizedLetter]) {
+      acc[normalizedLetter] = [];
+    }
+    acc[normalizedLetter].push(ravi);
+    return acc;
+  }, {} as Record<string, Ravi[]>);
+
+  const sortedGroups = Object.keys(groupedRaviler).sort();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -91,23 +121,35 @@ export default function RavilerPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredRaviler.map((ravi) => (
-                <Card key={ravi.name} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      <span>{ravi.name}</span>
-                      <Badge variant="secondary">{ravi.count} hadis</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Link href={`/ravi/${encodeURIComponent(ravi.name)}`}>
-                      <Button variant="outline" className="w-full">
-                        Hadisleri Görüntüle
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+            <div className="space-y-8">
+              {sortedGroups.map((letter) => (
+                <div key={letter}>
+                  <div className="mb-4 pb-2 border-b-2 border-primary">
+                    <h2 className="text-3xl font-bold text-primary">{letter}</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {groupedRaviler[letter].length} ravi
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {groupedRaviler[letter].map((ravi) => (
+                      <Card key={ravi.name} className="hover:shadow-lg transition-shadow">
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center justify-between">
+                            <span className="font-semibold">{ravi.name}</span>
+                            <Badge variant="secondary">{ravi.count} hadis</Badge>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Link href={`/ravi/${encodeURIComponent(ravi.name)}`}>
+                            <Button variant="outline" className="w-full">
+                              Hadisleri Görüntüle
+                            </Button>
+                          </Link>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
 

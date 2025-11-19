@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import HadisCard from '@/components/HadisCard';
 import Link from 'next/link';
@@ -80,12 +80,21 @@ export default function RaviDetailPage() {
               Ravilere Dön
             </Button>
           </Link>
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-foreground mb-2">{raviName}</h1>
-            <p className="text-lg text-muted-foreground">
-              Rivayet ettiği hadisler
-            </p>
-          </div>
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold text-foreground mb-2">{raviName}</h1>
+                <div className="flex items-center justify-center gap-4 mt-4">
+                  <Badge variant="default" className="text-lg px-4 py-2">
+                    {total} Hadis Rivayet Etti
+                  </Badge>
+                </div>
+                <p className="text-lg text-muted-foreground mt-4">
+                  Bu ravinin rivayet ettiği tüm hadisler aşağıda listelenmiştir
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Results Count */}
