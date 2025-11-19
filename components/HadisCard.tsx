@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BookOpen, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Hadis {
   id: string;
@@ -58,11 +60,27 @@ function cleanArabicText(text: string): string {
     .trim();
 }
 
+const MAX_PREVIEW_LENGTH = 500;
+
 export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
+  const [expandedTurkce, setExpandedTurkce] = useState(false);
+  const [expandedArapca, setExpandedArapca] = useState(false);
+  const [expandedAciklama, setExpandedAciklama] = useState(false);
+
   const cleanedTurkce = cleanText(hadis.turkce);
   const cleanedArapca = cleanArabicText(hadis.arapca);
   const cleanedAciklama = cleanText(hadis.aciklama);
   const cleanedBolumBaslik = cleanText(hadis.bolumBaslik);
+
+  const turkcePreview = cleanedTurkce.length > MAX_PREVIEW_LENGTH 
+    ? cleanedTurkce.substring(0, MAX_PREVIEW_LENGTH) 
+    : cleanedTurkce;
+  const arapcaPreview = cleanedArapca.length > MAX_PREVIEW_LENGTH 
+    ? cleanedArapca.substring(0, MAX_PREVIEW_LENGTH) 
+    : cleanedArapca;
+  const aciklamaPreview = cleanedAciklama.length > MAX_PREVIEW_LENGTH 
+    ? cleanedAciklama.substring(0, MAX_PREVIEW_LENGTH) 
+    : cleanedAciklama;
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -99,12 +117,36 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
               <FileText className="h-4 w-4" />
               Türkçe Metin
             </h4>
-            <p
-              className="text-foreground leading-relaxed"
-              dangerouslySetInnerHTML={{
-                __html: highlightText(cleanedTurkce, searchQuery),
-              }}
-            />
+            <div className="text-foreground leading-relaxed">
+              <p
+                dangerouslySetInnerHTML={{
+                  __html: highlightText(
+                    expandedTurkce ? cleanedTurkce : turkcePreview,
+                    searchQuery
+                  ),
+                }}
+              />
+              {cleanedTurkce.length > MAX_PREVIEW_LENGTH && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setExpandedTurkce(!expandedTurkce)}
+                  className="mt-2 text-primary hover:text-primary/80"
+                >
+                  {expandedTurkce ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      Daha Az Göster
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      Devamını Oku
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
@@ -112,13 +154,31 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
         {cleanedArapca && (
           <div>
             <h4 className="font-semibold mb-2">Arapça Metin</h4>
-            <p
-              className="text-right text-lg leading-relaxed font-arabic"
-              dir="rtl"
-              style={{ fontFamily: 'Arial, sans-serif' }}
-            >
-              {cleanedArapca}
-            </p>
+            <div className="text-right text-lg leading-relaxed font-arabic" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
+              <p>{expandedArapca ? cleanedArapca : arapcaPreview}</p>
+              {cleanedArapca.length > MAX_PREVIEW_LENGTH && (
+                <div className="text-left mt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setExpandedArapca(!expandedArapca)}
+                    className="text-primary hover:text-primary/80"
+                  >
+                    {expandedArapca ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-1" />
+                        Daha Az Göster
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-1" />
+                        Devamını Oku
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -126,17 +186,36 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
         {cleanedAciklama && (
           <div className="pt-4 border-t">
             <h4 className="font-semibold mb-2">Açıklama</h4>
-            <p
-              className="text-muted-foreground leading-relaxed text-sm"
-              dangerouslySetInnerHTML={{
-                __html: highlightText(cleanedAciklama.substring(0, 500), searchQuery),
-              }}
-            />
-            {cleanedAciklama.length > 500 && (
-              <p className="text-xs text-muted-foreground mt-2">
-                ... (Açıklama kısaltıldı)
-              </p>
-            )}
+            <div className="text-muted-foreground leading-relaxed text-sm">
+              <p
+                dangerouslySetInnerHTML={{
+                  __html: highlightText(
+                    expandedAciklama ? cleanedAciklama : aciklamaPreview,
+                    searchQuery
+                  ),
+                }}
+              />
+              {cleanedAciklama.length > MAX_PREVIEW_LENGTH && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setExpandedAciklama(!expandedAciklama)}
+                  className="mt-2 text-primary hover:text-primary/80"
+                >
+                  {expandedAciklama ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-1" />
+                      Daha Az Göster
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-1" />
+                      Devamını Oku
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
