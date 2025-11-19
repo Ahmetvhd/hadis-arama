@@ -4,11 +4,17 @@ Next.js ve shadcn/ui kullanılarak geliştirilmiş güçlü hadis arama uygulama
 
 ## Özellikler
 
-- 🔍 **Güçlü Arama**: Hadis metinlerinde, açıklamalarda ve bölüm başlıklarında arama yapın
+- 🔍 **Gelişmiş Arama Motoru**: 
+  - Türkçe karakter normalizasyonu (ı/i, ş/s, ğ/g, ü/u, ö/o, ç/c)
+  - Kelime bazlı arama
+  - Relevance skorlama ile en alakalı sonuçlar önce gelir
+  - Tam cümle eşleşmesi önceliklendirilir
+  - Hadis metinlerinde, açıklamalarda ve bölüm başlıklarında arama
 - ⚡ **Hızlı ve Responsive**: Modern UI tasarımı ile mobil ve masaüstü uyumlu
 - 🎨 **Modern Tasarım**: shadcn/ui componentleri ile şık arayüz
 - 📄 **Sayfalama**: Büyük sonuç setleri için sayfalama desteği
 - ✨ **Vurgulama**: Arama terimleri otomatik olarak vurgulanır
+- 📚 **Parçalı Veritabanı**: 3 parça halinde organize edilmiş veritabanı (her biri 100MB altında)
 
 ## Kurulum
 
@@ -23,7 +29,7 @@ cd hadis-arama
 npm install
 ```
 
-3. **Önemli**: `hadisler.json` dosyasını proje kök dizinine eklemeniz gerekiyor. Bu dosya GitHub'a yüklenemeyecek kadar büyük olduğu için repository'de bulunmuyor.
+3. Veritabanı dosyaları `hadislerjson` klasöründe bulunmaktadır ve otomatik olarak yüklenir.
 
 4. Geliştirme sunucusunu başlatın:
 ```bash
