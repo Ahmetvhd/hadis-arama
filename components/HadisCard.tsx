@@ -23,10 +23,84 @@ interface HadisCardProps {
   searchQuery: string;
 }
 
-function highlightText(text: string, query: string): string {
+function highlightText(text: string, query: string, hadisHukmu?: string | null): string {
+  // Önce hüküm terimlerini renklendir
+  let highlighted = text;
+  
+  if (hadisHukmu) {
+    const hukmuLower = hadisHukmu.toLowerCase();
+    let hukmuColor = '';
+    
+    switch (hukmuLower) {
+      case 'sahih':
+        hukmuColor = '#10b981';
+        break;
+      case 'hasen':
+        hukmuColor = '#3b82f6';
+        break;
+      case 'zayıf':
+        hukmuColor = '#f59e0b';
+        break;
+      case 'mevzû':
+      case 'mevzu':
+        hukmuColor = '#ef4444';
+        break;
+    }
+    
+    if (hukmuColor) {
+      // Hüküm terimlerini renklendir (tam kelime eşleşmesi)
+      const hukmuPatterns: { [key: string]: RegExp[] } = {
+        'sahih': [
+          /\b(sahih)\b/gi,
+          /\b(sahihdir)\b/gi,
+          /\b(sahihtir)\b/gi,
+        ],
+        'hasen': [
+          /\b(hasen)\b/gi,
+          /\b(hasendir)\b/gi,
+          /\b(hasentir)\b/gi,
+        ],
+        'zayıf': [
+          /\b(zayıf)\b/gi,
+          /\b(zayiftir)\b/gi,
+          /\b(zayifdir)\b/gi,
+          /\b(daif)\b/gi,
+          /\b(daiftir)\b/gi,
+        ],
+        'mevzû': [
+          /\b(mevzû)\b/gi,
+          /\b(mevzu)\b/gi,
+          /\b(mevzudur)\b/gi,
+          /\b(mevzutur)\b/gi,
+          /\b(uydurma)\b/gi,
+        ],
+      };
+      
+      const patterns = hukmuPatterns[hukmuLower] || [];
+      for (const pattern of patterns) {
+        highlighted = highlighted.replace(pattern, (match) => {
+          // Eğer zaten HTML tag içindeyse değiştirme
+          if (match.includes('<') || match.includes('>')) return match;
+          return `<span style="color: ${hukmuColor}; font-weight: 600;">${match}</span>`;
+        });
+      }
+    }
+  }
+  
   if (!query.trim()) {
-    // Query yoksa, HTML içindeki renkleri beyaz yap
-    return text.replace(/style="[^"]*color:[^"]*"/gi, 'style="color: white;"');
+    // Query yoksa, HTML içindeki diğer renkleri beyaz yap (hüküm renkleri hariç)
+    highlighted = highlighted.replace(/style="[^"]*color:\s*[^;"]+[^"]*"/gi, (match) => {
+      // Hüküm renklerini koru
+      if (match.includes('#10b981') || match.includes('#3b82f6') || match.includes('#f59e0b') || match.includes('#ef4444')) {
+        return match;
+      }
+      // Diğer renkleri white ile değiştir
+      if (match.includes('color: white') || match.includes('color:white')) {
+        return match;
+      }
+      return match.replace(/color:\s*[^;"]+/gi, 'color: white');
+    });
+    return highlighted;
   }
   
   // HTML içeriğini korumak için önce HTML taglerini geçici olarak değiştir
@@ -34,7 +108,7 @@ function highlightText(text: string, query: string): string {
   const placeholders: string[] = [];
   let placeholderIndex = 0;
   
-  let textWithPlaceholders = text.replace(htmlTagRegex, (match) => {
+  let textWithPlaceholders = highlighted.replace(htmlTagRegex, (match) => {
     const placeholder = `__HTML_PLACEHOLDER_${placeholderIndex}__`;
     placeholders[placeholderIndex] = match;
     placeholderIndex++;
@@ -44,7 +118,7 @@ function highlightText(text: string, query: string): string {
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
   const parts = textWithPlaceholders.split(regex);
   
-  let highlighted = parts.map((part, index) => {
+  highlighted = parts.map((part, index) => {
     // Placeholder'ları geri yükle
     if (part.startsWith('__HTML_PLACEHOLDER_')) {
       const idx = parseInt(part.replace('__HTML_PLACEHOLDER_', '').replace('__', ''));
@@ -57,9 +131,12 @@ function highlightText(text: string, query: string): string {
     return part;
   }).join('');
   
-  // HTML içindeki renkleri beyaz yap (lacivert veya diğer renkleri kaldır)
+  // HTML içindeki renkleri beyaz yap (hüküm renkleri ve arama vurgusu hariç)
   highlighted = highlighted.replace(/style="[^"]*color:\s*[^;"]+[^"]*"/gi, (match) => {
-    // Eğer zaten color: white varsa olduğu gibi bırak
+    // Hüküm renklerini ve arama vurgusunu koru
+    if (match.includes('#10b981') || match.includes('#3b82f6') || match.includes('#f59e0b') || match.includes('#ef4444')) {
+      return match;
+    }
     if (match.includes('color: white') || match.includes('color:white')) {
       return match;
     }
@@ -187,7 +264,7 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
               <span
                 className="text-white"
                 dangerouslySetInnerHTML={{
-                  __html: highlightText(cleanedBolumBaslik, searchQuery),
+                  __html: highlightText(cleanedBolumBaslik, searchQuery, hadis.hadisHukmu),
                 }}
               />
             </CardTitle>
@@ -220,7 +297,8 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
                 dangerouslySetInnerHTML={{
                   __html: highlightText(
                     expandedTurkce ? cleanedTurkce : turkcePreview,
-                    searchQuery
+                    searchQuery,
+                    hadis.hadisHukmu
                   ),
                 }}
               />
