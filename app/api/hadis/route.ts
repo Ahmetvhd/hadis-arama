@@ -760,8 +760,33 @@ export async function GET(request: NextRequest) {
     const normalizedQuery = prepareSearchText(query);
     const queryWords = normalizedQuery.split(' ').filter(w => w.length > 0);
     
+    // Hadis numarası araması kontrolü (sadece sayılardan oluşuyorsa veya "hadis no" formatında ise)
+    const isHadisNoSearch = /^\d+$/.test(query.trim()) || /hadis\s*no[:\s]*\d+/i.test(query.trim());
+    let hadisNoToSearch = '';
+    if (isHadisNoSearch) {
+      const noMatch = query.match(/\d+/);
+      if (noMatch) {
+        hadisNoToSearch = noMatch[0];
+      }
+    }
+    
     // Her hadis için relevance skoru hesapla
     const hadisWithScores = filtered.map((hadis) => {
+      // Hadis numarası araması - öncelikli kontrol
+      if (isHadisNoSearch && hadisNoToSearch) {
+        const hadisNo = String(hadis.hadisNo || '').trim();
+        const hadisId = String(hadis.id || '').trim();
+        
+        // Tam eşleşme için çok yüksek skor
+        if (hadisNo === hadisNoToSearch || hadisId === hadisNoToSearch) {
+          return { hadis, score: 10000, matchedWords: queryWords.length };
+        }
+        // Kısmi eşleşme için yüksek skor
+        if (hadisNo.includes(hadisNoToSearch) || hadisId.includes(hadisNoToSearch)) {
+          return { hadis, score: 5000, matchedWords: queryWords.length };
+        }
+      }
+      
       const turkceText = prepareSearchText(hadis.turkce);
       const arapcaText = prepareSearchText(hadis.arapca);
       const bolumText = prepareSearchText(hadis.bolumBaslik);
