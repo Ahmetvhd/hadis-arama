@@ -48,71 +48,90 @@ function prepareSearchText(text: string): string {
 function detectHadisHukmu(turkce: string, aciklama: string, bolumBaslik: string): string | null {
   const searchText = `${turkce} ${aciklama} ${bolumBaslik}`.toLowerCase();
   
-  // Sahih terimleri
-  const sahihPatterns = [
-    /\bsahih\b/,
-    /\bsahihdir\b/,
-    /\bsahihtir\b/,
-    /\bsahih hadis\b/,
-    /\bsahih-i\b/,
-    /\bsahih olan\b/,
+  // Kitap isimlerini hariç tut (sahih-i buhari, sahih-i müslim gibi)
+  const kitapIsimleri = [
+    'sahih-i buhari',
+    'sahih-i müslim',
+    'sahih-i muslim',
+    'sahih buhari',
+    'sahih müslim',
+    'sahih muslim',
   ];
   
-  // Hasen terimleri
-  const hasenPatterns = [
-    /\bhasen\b/,
-    /\bhasendir\b/,
-    /\bhasentir\b/,
-    /\bhasen hadis\b/,
-    /\bhasen olan\b/,
-  ];
+  // Kitap isimlerini geçici olarak değiştir
+  let cleanedText = searchText;
+  for (const kitap of kitapIsimleri) {
+    cleanedText = cleanedText.replace(new RegExp(kitap, 'gi'), 'KITAP_ISMI');
+  }
   
-  // Zayıf terimleri
+  // Zayıf terimleri (en spesifik olanlar önce)
   const zayifPatterns = [
-    /\bzayif\b/,
-    /\bzayiftir\b/,
-    /\bzayifdir\b/,
-    /\bzayif hadis\b/,
+    /\bzayıf hadis\b/,
     /\bzayif olan\b/,
     /\bzayiftir\b/,
+    /\bzayifdir\b/,
+    /\bzayif\b/,
+    /\bdaif\b/,
+    /\bdaif hadis\b/,
+    /\bdaiftir\b/,
   ];
   
-  // Mevzû terimleri
+  // Mevzû terimleri (en spesifik olanlar önce)
   const mevzuPatterns = [
-    /\bmevzû\b/,
-    /\bmevzu\b/,
-    /\bmevzudur\b/,
-    /\bmevzutur\b/,
     /\bmevzû hadis\b/,
     /\bmevzu hadis\b/,
+    /\buydurma hadis\b/,
     /\bmevzû olan\b/,
     /\bmevzu olan\b/,
+    /\bmevzudur\b/,
+    /\bmevzutur\b/,
+    /\bmevzû\b/,
+    /\bmevzu\b/,
     /\buydurma\b/,
-    /\buydurma hadis\b/,
   ];
   
-  // Öncelik sırası: Sahih > Hasen > Zayıf > Mevzû
-  for (const pattern of sahihPatterns) {
-    if (pattern.test(searchText)) {
-      return 'Sahih';
-    }
-  }
+  // Hasen terimleri (en spesifik olanlar önce)
+  const hasenPatterns = [
+    /\bhasen hadis\b/,
+    /\bhasen olan\b/,
+    /\bhasendir\b/,
+    /\bhasentir\b/,
+    /\bhasen\b/,
+  ];
   
-  for (const pattern of hasenPatterns) {
-    if (pattern.test(searchText)) {
-      return 'Hasen';
-    }
-  }
+  // Sahih terimleri (en spesifik olanlar önce, kitap isimlerinden sonra kontrol et)
+  const sahihPatterns = [
+    /\bsahih hadis\b/,
+    /\bsahih olan\b/,
+    /\bsahihtir\b/,
+    /\bsahihdir\b/,
+    /\bsahih\b/,
+  ];
   
+  // Öncelik sırası: Zayıf > Mevzû > Hasen > Sahih (en spesifik olanlar önce)
+  // Zayıf ve Mevzû daha önemli çünkü bunlar uyarı gerektirir
   for (const pattern of zayifPatterns) {
-    if (pattern.test(searchText)) {
+    if (pattern.test(cleanedText)) {
       return 'Zayıf';
     }
   }
   
   for (const pattern of mevzuPatterns) {
-    if (pattern.test(searchText)) {
+    if (pattern.test(cleanedText)) {
       return 'Mevzû';
+    }
+  }
+  
+  for (const pattern of hasenPatterns) {
+    if (pattern.test(cleanedText)) {
+      return 'Hasen';
+    }
+  }
+  
+  // Sahih'i en son kontrol et (çünkü kitap isimlerinde de geçebilir)
+  for (const pattern of sahihPatterns) {
+    if (pattern.test(cleanedText)) {
+      return 'Sahih';
     }
   }
   
@@ -161,17 +180,39 @@ function loadHadisData(): Hadis[] {
         if (index === 0) return false;
         // Gerçek hadis kayıtlarını filtrele - Türkçe metin içeren kayıtlar
         // Yapı: [id, arapca(1), turkce(2), aciklama(3), ..., kitapNo(6), bolumNo(7), hadisNo(8), ...]
-        return Array.isArray(item) && item.length > 10 && 
-               typeof item[2] === 'string' && item[2].trim().length > 0 &&
-               item[2].length > 20; // Gerçek hadis metni olmalı
+        if (!Array.isArray(item) || item.length <= 10) return false;
+        
+        const turkce = String(item[2] || '').trim();
+        // Türkçe metin boş olmamalı ve yeterince uzun olmalı
+        if (!turkce || turkce.length < 20) return false;
+        
+        // Sadece boşluk veya özel karakterlerden oluşan metinleri filtrele
+        if (/^[\s\W]*$/.test(turkce)) return false;
+        
+        return true;
       })
       .map((item, index) => {
         const kitapNo = String(item[6] || '');
         const bolumNo = String(item[7] || '');
         const bolumKey = `${kitapNo}-${bolumNo}`;
         
-        let turkce = String(item[2] || '');
-        let aciklama = String(item[3] || '');
+        let turkce = String(item[2] || '').trim();
+        let aciklama = String(item[3] || '').trim();
+        
+        // Türkçe metin boşsa veya çok kısaysa, açıklamadan veya Arapça metinden al
+        if (!turkce || turkce.length < 10) {
+          // Açıklama varsa onu kullan
+          if (aciklama && aciklama.length > 10) {
+            turkce = aciklama;
+            aciklama = '';
+          } else {
+            // Arapça metni Türkçe olarak kullan (geçici çözüm)
+            const arapca = String(item[1] || '').trim();
+            if (arapca && arapca.length > 10) {
+              turkce = arapca;
+            }
+          }
+        }
         
         // Eğer açıklama Türkçe metin içinde birleşik geliyorsa ayır
         // Açıklama genellikle "Açıklama:", "Not:", "Dipnot:" gibi kelimelerle başlar
@@ -196,6 +237,11 @@ function loadHadisData(): Hadis[] {
           }
         }
         
+        // Son kontrol: Türkçe metin hala boşsa veya çok kısaysa bu hadisi atla
+        if (!turkce || turkce.trim().length < 10) {
+          return null;
+        }
+        
         // Hadis hükmünü tespit et
         const hadisHukmu = detectHadisHukmu(
           turkce.trim(),
@@ -217,7 +263,7 @@ function loadHadisData(): Hadis[] {
         };
         return hadis;
       })
-      .filter((hadis) => hadis.turkce && hadis.turkce.trim().length > 20);
+      .filter((hadis) => hadis && hadis.turkce && hadis.turkce.trim().length > 10);
     
     return hadisData;
   } catch (error) {

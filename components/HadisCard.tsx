@@ -82,8 +82,8 @@ function formatHadisText(text: string): string {
     const beforeColon = text.substring(0, colonIndex).trim();
     const afterColon = text.substring(colonIndex + 1).trim();
     
-    // Önceki kısmı kalın ve koyu renk yap (daha belirgin)
-    return `<span class="font-bold text-gray-900 dark:text-gray-100" style="font-weight: 700; font-size: 1.05em;">${beforeColon}:</span> ${afterColon}`;
+    // Önceki kısmı kalın ve beyaz renk yap (daha belirgin)
+    return `<span class="font-bold text-white" style="font-weight: 700; font-size: 1.05em; color: white;">${beforeColon}:</span> ${afterColon}`;
   }
   
   return text;
