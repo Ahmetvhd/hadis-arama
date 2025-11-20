@@ -89,8 +89,17 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header - Kitap Sembolü Ortada */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-8">
-            <BookOpen className="h-16 w-16" style={{ color: '#d1ad3c' }} />
+          <div className="flex flex-col items-center justify-center mb-8">
+            <BookOpen className="h-16 w-16 mb-4" style={{ color: '#d1ad3c' }} />
+            <h2 
+              className="text-3xl font-bold"
+              style={{ 
+                color: '#d1ad3c',
+                textShadow: '0 0 20px rgba(209, 173, 60, 0.5), 0 0 40px rgba(209, 173, 60, 0.3)',
+              }}
+            >
+              Peygamberimiz <span className="text-xs" style={{ fontSize: '0.5em', verticalAlign: 'middle' }}>(s.a.v.)</span> Mirası
+            </h2>
           </div>
           
           {/* Butonlar Üstte */}
