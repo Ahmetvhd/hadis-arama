@@ -64,7 +64,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-black text-white;
+    background-color: #000000;
+    color: #ffffff;
+  }
+  
+  input::placeholder {
+    color: #9ca3af;
   }
 }
 
