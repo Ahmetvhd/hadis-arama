@@ -11,6 +11,7 @@ interface Hadis {
   arapca: string;
   turkce: string;
   aciklama: string;
+  hadisHukmu?: string | null;
   [key: string]: any;
 }
 
@@ -41,6 +42,81 @@ function prepareSearchText(text: string): string {
     .replace(/[^\w\s]/g, ' ') // Özel karakterleri boşlukla değiştir
     .replace(/\s+/g, ' ') // Birden fazla boşluğu tek boşluğa çevir
     .trim();
+}
+
+// Hadis hükmünü tespit et (sahih, hasen, zayıf, mevzû)
+function detectHadisHukmu(turkce: string, aciklama: string, bolumBaslik: string): string | null {
+  const searchText = `${turkce} ${aciklama} ${bolumBaslik}`.toLowerCase();
+  
+  // Sahih terimleri
+  const sahihPatterns = [
+    /\bsahih\b/,
+    /\bsahihdir\b/,
+    /\bsahihtir\b/,
+    /\bsahih hadis\b/,
+    /\bsahih-i\b/,
+    /\bsahih olan\b/,
+  ];
+  
+  // Hasen terimleri
+  const hasenPatterns = [
+    /\bhasen\b/,
+    /\bhasendir\b/,
+    /\bhasentir\b/,
+    /\bhasen hadis\b/,
+    /\bhasen olan\b/,
+  ];
+  
+  // Zayıf terimleri
+  const zayifPatterns = [
+    /\bzayif\b/,
+    /\bzayiftir\b/,
+    /\bzayifdir\b/,
+    /\bzayif hadis\b/,
+    /\bzayif olan\b/,
+    /\bzayiftir\b/,
+  ];
+  
+  // Mevzû terimleri
+  const mevzuPatterns = [
+    /\bmevzû\b/,
+    /\bmevzu\b/,
+    /\bmevzudur\b/,
+    /\bmevzutur\b/,
+    /\bmevzû hadis\b/,
+    /\bmevzu hadis\b/,
+    /\bmevzû olan\b/,
+    /\bmevzu olan\b/,
+    /\buydurma\b/,
+    /\buydurma hadis\b/,
+  ];
+  
+  // Öncelik sırası: Sahih > Hasen > Zayıf > Mevzû
+  for (const pattern of sahihPatterns) {
+    if (pattern.test(searchText)) {
+      return 'Sahih';
+    }
+  }
+  
+  for (const pattern of hasenPatterns) {
+    if (pattern.test(searchText)) {
+      return 'Hasen';
+    }
+  }
+  
+  for (const pattern of zayifPatterns) {
+    if (pattern.test(searchText)) {
+      return 'Zayıf';
+    }
+  }
+  
+  for (const pattern of mevzuPatterns) {
+    if (pattern.test(searchText)) {
+      return 'Mevzû';
+    }
+  }
+  
+  return null;
 }
 
 
@@ -120,6 +196,13 @@ function loadHadisData(): Hadis[] {
           }
         }
         
+        // Hadis hükmünü tespit et
+        const hadisHukmu = detectHadisHukmu(
+          turkce.trim(),
+          aciklama.trim(),
+          bolumBasliklari?.get(bolumKey) || ''
+        );
+        
         // Veri yapısına göre hadis bilgilerini çıkar
         const hadis: Hadis = {
           id: String(item[0] || index),
@@ -130,6 +213,7 @@ function loadHadisData(): Hadis[] {
           arapca: String(item[1] || ''),
           turkce: turkce.trim(),
           aciklama: aciklama.trim(),
+          hadisHukmu: hadisHukmu || null,
         };
         return hadis;
       })

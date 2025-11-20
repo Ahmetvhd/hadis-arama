@@ -15,6 +15,7 @@ interface Hadis {
   arapca: string;
   turkce: string;
   aciklama: string;
+  hadisHukmu?: string | null;
 }
 
 interface HadisCardProps {
@@ -124,9 +125,44 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
     ? cleanedAciklama.substring(0, MAX_PREVIEW_LENGTH) 
     : cleanedAciklama;
 
+  // Hüküm rengi belirleme
+  const getHukmuColor = (hukmu: string | null | undefined): string => {
+    if (!hukmu) return '';
+    switch (hukmu.toLowerCase()) {
+      case 'sahih':
+        return '#10b981'; // Yeşil
+      case 'hasen':
+        return '#3b82f6'; // Mavi
+      case 'zayıf':
+        return '#f59e0b'; // Turuncu
+      case 'mevzû':
+      case 'mevzu':
+        return '#ef4444'; // Kırmızı
+      default:
+        return '#d1ad3c'; // Altın (varsayılan)
+    }
+  };
+
   return (
-    <Card className="hover:shadow-lg transition-shadow" style={{ backgroundColor: '#252628' }}>
-      <CardHeader>
+    <Card className="hover:shadow-lg transition-shadow relative" style={{ backgroundColor: '#252628' }}>
+      {/* Hadis Hükmü Badge - Sol Üst Köşe */}
+      {hadis.hadisHukmu && (
+        <div 
+          className="absolute top-2 left-2 z-10"
+          style={{ 
+            backgroundColor: getHukmuColor(hadis.hadisHukmu),
+            borderRadius: '4px',
+            padding: '4px 8px',
+            fontSize: '12px',
+            fontWeight: '600',
+            color: 'white',
+            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+          }}
+        >
+          {hadis.hadisHukmu}
+        </div>
+      )}
+      <CardHeader className={hadis.hadisHukmu ? "pt-10" : ""}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <CardTitle className="text-xl mb-2 flex items-center gap-2 text-white">
