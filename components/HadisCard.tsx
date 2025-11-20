@@ -142,22 +142,6 @@ function highlightText(text: string, query: string, hadisHukmu?: string | null):
   const placeholders: string[] = [];
   let placeholderIndex = 0;
   
-  // Önce mevcut placeholder'ları (eğer varsa) HTML tag'lerine çevir
-  // Bu, veri kaynağından gelen placeholder'ları düzeltmek için
-  const existingPlaceholderRegex = /__HTML_PLACEHOLDER_(\d+)__/g;
-  let existingPlaceholders: Map<number, string> = new Map();
-  let existingMatch;
-  
-  // Mevcut placeholder'ları bul ve sakla (eğer varsa)
-  while ((existingMatch = existingPlaceholderRegex.exec(highlighted)) !== null) {
-    const idx = parseInt(existingMatch[1], 10);
-    // Placeholder'ı geçici olarak işaretle, sonra geri yükleyeceğiz
-    if (!existingPlaceholders.has(idx)) {
-      existingPlaceholders.set(idx, existingMatch[0]);
-    }
-  }
-  
-  // HTML taglerini geçici olarak placeholder'lara çevir
   let textWithPlaceholders = highlighted.replace(htmlTagRegex, (match) => {
     const placeholder = `__HTML_PLACEHOLDER_${placeholderIndex}__`;
     placeholders[placeholderIndex] = match;
@@ -180,13 +164,15 @@ function highlightText(text: string, query: string, hadisHukmu?: string | null):
         while ((match = placeholderRegex.exec(part)) !== null) {
           const idx = parseInt(match[1], 10);
           if (!isNaN(idx) && idx >= 0 && idx < placeholders.length) {
-            // Placeholder'ı geri HTML tag'ine çevir
             result = result.replace(match[0], placeholders[idx]);
           } else {
-            // Geçersiz placeholder'ı kaldır (stil bilgisi kaybolur)
+            // Geçersiz placeholder'ı kaldır
             result = result.replace(match[0], '');
           }
         }
+        
+        // Eğer hala placeholder kaldıysa, tüm placeholder'ları temizle
+        result = result.replace(/__HTML_PLACEHOLDER_\d+__/g, '');
         
         return result;
       }
@@ -200,8 +186,7 @@ function highlightText(text: string, query: string, hadisHukmu?: string | null):
     }
   }).join('');
   
-  // Son kontrol: Eğer hala placeholder kaldıysa, bunları kaldır
-  // (Bu durumda stil bilgisi kaybolur, ama placeholder görünmez)
+  // Son kontrol: Kalan tüm placeholder'ları temizle
   highlighted = highlighted.replace(/__HTML_PLACEHOLDER_\d+__/g, '');
   
   // HTML içindeki renkleri beyaz yap (hüküm renkleri ve arama vurgusu hariç)
