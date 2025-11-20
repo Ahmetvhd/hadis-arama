@@ -24,66 +24,81 @@ interface HadisCardProps {
 }
 
 function highlightText(text: string, query: string, hadisHukmu?: string | null): string {
-  // Önce hüküm terimlerini renklendir
+  // Önce hüküm terimlerini renklendir (hadisHukmu olsun ya da olmasın, metin içinde geçen tüm hüküm terimlerini renklendir)
   let highlighted = text;
   
-  if (hadisHukmu) {
-    const hukmuLower = hadisHukmu.toLowerCase();
-    let hukmuColor = '';
-    
-    switch (hukmuLower) {
-      case 'sahih':
-        hukmuColor = '#10b981';
-        break;
-      case 'hasen':
-        hukmuColor = '#3b82f6';
-        break;
-      case 'zayıf':
-        hukmuColor = '#f59e0b';
-        break;
-      case 'mevzû':
-      case 'mevzu':
-        hukmuColor = '#ef4444';
-        break;
-    }
-    
-    if (hukmuColor) {
-      // Hüküm terimlerini renklendir (tam kelime eşleşmesi)
-      const hukmuPatterns: { [key: string]: RegExp[] } = {
-        'sahih': [
-          /\b(sahih)\b/gi,
-          /\b(sahihdir)\b/gi,
-          /\b(sahihtir)\b/gi,
-        ],
-        'hasen': [
-          /\b(hasen)\b/gi,
-          /\b(hasendir)\b/gi,
-          /\b(hasentir)\b/gi,
-        ],
-        'zayıf': [
-          /\b(zayıf)\b/gi,
-          /\b(zayiftir)\b/gi,
-          /\b(zayifdir)\b/gi,
-          /\b(daif)\b/gi,
-          /\b(daiftir)\b/gi,
-        ],
-        'mevzû': [
-          /\b(mevzû)\b/gi,
-          /\b(mevzu)\b/gi,
-          /\b(mevzudur)\b/gi,
-          /\b(mevzutur)\b/gi,
-          /\b(uydurma)\b/gi,
-        ],
-      };
-      
-      const patterns = hukmuPatterns[hukmuLower] || [];
-      for (const pattern of patterns) {
-        highlighted = highlighted.replace(pattern, (match) => {
-          // Eğer zaten HTML tag içindeyse değiştirme
-          if (match.includes('<') || match.includes('>')) return match;
-          return `<span style="color: ${hukmuColor}; font-weight: 600;">${match}</span>`;
-        });
-      }
+  // Tüm hüküm terimlerini ve renklerini tanımla
+  const hukmuPatterns = [
+    {
+      patterns: [
+        /\b(sahih)\b/gi,
+        /\b(sahihdir)\b/gi,
+        /\b(sahihtir)\b/gi,
+        /\b(sahih hadis)\b/gi,
+        /\b(sahih olan)\b/gi,
+      ],
+      color: '#10b981', // Yeşil
+    },
+    {
+      patterns: [
+        /\b(hasen)\b/gi,
+        /\b(hasendir)\b/gi,
+        /\b(hasentir)\b/gi,
+        /\b(hasen hadis)\b/gi,
+        /\b(hasen olan)\b/gi,
+      ],
+      color: '#3b82f6', // Mavi
+    },
+    {
+      patterns: [
+        /\b(zayıf)\b/gi,
+        /\b(zayiftir)\b/gi,
+        /\b(zayifdir)\b/gi,
+        /\b(zayıf hadis)\b/gi,
+        /\b(zayif hadis)\b/gi,
+        /\b(zayıf olan)\b/gi,
+        /\b(zayif olan)\b/gi,
+        /\b(daif)\b/gi,
+        /\b(daiftir)\b/gi,
+        /\b(daif hadis)\b/gi,
+      ],
+      color: '#f59e0b', // Turuncu
+    },
+    {
+      patterns: [
+        /\b(mevzû)\b/gi,
+        /\b(mevzu)\b/gi,
+        /\b(mevzudur)\b/gi,
+        /\b(mevzutur)\b/gi,
+        /\b(mevzû hadis)\b/gi,
+        /\b(mevzu hadis)\b/gi,
+        /\b(mevzû olan)\b/gi,
+        /\b(mevzu olan)\b/gi,
+        /\b(uydurma)\b/gi,
+        /\b(uydurma hadis)\b/gi,
+      ],
+      color: '#ef4444', // Kırmızı
+    },
+  ];
+  
+  // Öncelik sırası: Zayıf > Mevzû > Hasen > Sahih (daha spesifik olanlar önce)
+  // Ters sırada işle ki daha spesifik olanlar önce eşleşsin
+  for (let i = hukmuPatterns.length - 1; i >= 0; i--) {
+    const hukmu = hukmuPatterns[i];
+    for (const pattern of hukmu.patterns) {
+      highlighted = highlighted.replace(pattern, (match, offset, string) => {
+        // Eğer zaten HTML tag içindeyse değiştirme
+        const beforeMatch = string.substring(Math.max(0, offset - 50), offset);
+        const afterMatch = string.substring(offset + match.length, offset + match.length + 50);
+        if (beforeMatch.includes('<span') || afterMatch.includes('</span>')) {
+          return match;
+        }
+        // Eğer zaten renklendirilmişse değiştirme
+        if (beforeMatch.includes('style="color:') || beforeMatch.includes("style='color:")) {
+          return match;
+        }
+        return `<span style="color: ${hukmu.color}; font-weight: 600;">${match}</span>`;
+      });
     }
   }
   
@@ -335,7 +350,15 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
             <div className="text-right">
               <h4 className="font-semibold mb-2 text-white">Arapça Metin</h4>
               <div className="text-right text-lg leading-relaxed font-arabic text-white" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
-                <p>{expandedArapca ? cleanedArapca : arapcaPreview}</p>
+                <p
+                  dangerouslySetInnerHTML={{
+                    __html: highlightText(
+                      expandedArapca ? cleanedArapca : arapcaPreview,
+                      searchQuery,
+                      hadis.hadisHukmu
+                    ),
+                  }}
+                />
                 {cleanedArapca.length > MAX_PREVIEW_LENGTH && (
                   <div className="text-left mt-2">
                     <Button
