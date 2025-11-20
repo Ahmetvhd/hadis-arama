@@ -129,7 +129,7 @@ export default function Home() {
                   placeholder="Hadis metninde, açıklamada veya bölüm başlığında ara..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="pl-10 h-12 text-lg bg-[#252628] text-white border-gray-700 focus:border-[#d1ad3c]"
+                  className="pl-10 h-12 text-lg bg-[#252628] text-white border-gray-700 focus:border-[#d1ad3c] placeholder:text-gray-400"
                   style={{ backgroundColor: '#252628', color: 'white' }}
                 />
               </div>
