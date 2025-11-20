@@ -29,105 +29,16 @@ function highlightText(text: string, query: string, hadisHukmu?: string | null):
     return '';
   }
   
-  // Önce hüküm terimlerini renklendir (hadisHukmu olsun ya da olmasın, metin içinde geçen tüm hüküm terimlerini renklendir)
+  // Hüküm terimlerinin renklendirmelerini kaldır (sahih, hasen, zayıf, mevzu)
   let highlighted = text;
   
-  // Tüm hüküm terimlerini ve renklerini tanımla
-  const hukmuPatterns = [
-    {
-      patterns: [
-        /\b(sahih)\b/gi,
-        /\b(sahihdir)\b/gi,
-        /\b(sahihtir)\b/gi,
-        /\b(sahih hadis)\b/gi,
-        /\b(sahih olan)\b/gi,
-      ],
-      color: '#10b981', // Yeşil
-    },
-    {
-      patterns: [
-        /\b(hasen)\b/gi,
-        /\b(hasendir)\b/gi,
-        /\b(hasentir)\b/gi,
-        /\b(hasen hadis)\b/gi,
-        /\b(hasen olan)\b/gi,
-      ],
-      color: '#3b82f6', // Mavi
-    },
-    {
-      patterns: [
-        /\b(zayıf)\b/gi,
-        /\b(zayiftir)\b/gi,
-        /\b(zayifdir)\b/gi,
-        /\b(zayıf hadis)\b/gi,
-        /\b(zayif hadis)\b/gi,
-        /\b(zayıf olan)\b/gi,
-        /\b(zayif olan)\b/gi,
-        /\b(daif)\b/gi,
-        /\b(daiftir)\b/gi,
-        /\b(daif hadis)\b/gi,
-      ],
-      color: '#f59e0b', // Turuncu
-    },
-    {
-      patterns: [
-        /\b(mevzû)\b/gi,
-        /\b(mevzu)\b/gi,
-        /\b(mevzudur)\b/gi,
-        /\b(mevzutur)\b/gi,
-        /\b(mevzû hadis)\b/gi,
-        /\b(mevzu hadis)\b/gi,
-        /\b(mevzû olan)\b/gi,
-        /\b(mevzu olan)\b/gi,
-        /\b(uydurma)\b/gi,
-        /\b(uydurma hadis)\b/gi,
-      ],
-      color: '#ef4444', // Kırmızı
-    },
-  ];
-  
-  // Öncelik sırası: Zayıf > Mevzû > Hasen > Sahih (daha spesifik olanlar önce)
-  // Ters sırada işle ki daha spesifik olanlar önce eşleşsin
-  try {
-    for (let i = hukmuPatterns.length - 1; i >= 0; i--) {
-      const hukmu = hukmuPatterns[i];
-      for (const pattern of hukmu.patterns) {
-        highlighted = highlighted.replace(pattern, (match, ...args) => {
-          try {
-            // offset ve string parametrelerini güvenli şekilde al
-            const offset = typeof args[0] === 'number' ? args[0] : 0;
-            const string = typeof args[1] === 'string' ? args[1] : highlighted;
-            
-            // Eğer zaten HTML tag içindeyse değiştirme
-            const beforeMatch = string.substring(Math.max(0, offset - 50), offset);
-            const afterMatch = string.substring(offset + match.length, Math.min(string.length, offset + match.length + 50));
-            if (beforeMatch.includes('<span') || afterMatch.includes('</span>')) {
-              return match;
-            }
-            // Eğer zaten renklendirilmişse değiştirme
-            if (beforeMatch.includes('style="color:') || beforeMatch.includes("style='color:")) {
-              return match;
-            }
-            return `<span style="color: ${hukmu.color}; font-weight: 600;">${match}</span>`;
-          } catch (e) {
-            // Hata durumunda orijinal match'i döndür
-            return match;
-          }
-        });
-      }
-    }
-  } catch (e) {
-    // Hata durumunda orijinal metni döndür
-    console.error('Hüküm terimi renklendirme hatası:', e);
-  }
+  // Önce mevcut hüküm renklendirmelerini temizle
+  // Hüküm renkleri: #10b981 (yeşil), #3b82f6 (mavi), #f59e0b (turuncu), #ef4444 (kırmızı)
+  highlighted = highlighted.replace(/<span\s+style="[^"]*color:\s*(?:#10b981|#3b82f6|#f59e0b|#ef4444)[^"]*"[^>]*>([^<]+)<\/span>/gi, '$1');
   
   if (!query.trim()) {
-    // Query yoksa, HTML içindeki diğer renkleri beyaz yap (hüküm renkleri hariç)
+    // Query yoksa, HTML içindeki diğer renkleri beyaz yap
     highlighted = highlighted.replace(/style="[^"]*color:\s*[^;"]+[^"]*"/gi, (match) => {
-      // Hüküm renklerini koru
-      if (match.includes('#10b981') || match.includes('#3b82f6') || match.includes('#f59e0b') || match.includes('#ef4444')) {
-        return match;
-      }
       // Diğer renkleri white ile değiştir
       if (match.includes('color: white') || match.includes('color:white')) {
         return match;
