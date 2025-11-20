@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Map, Loader2 } from 'lucide-react';
+import { Map, Loader2, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,7 +49,21 @@ export default function YolHaritasiPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Geri Dön Butonu */}
+        <div className="mb-6">
+          <Link href="/">
+            <Button 
+              variant="ghost" 
+              className="text-white hover:bg-[#252628]"
+              style={{ color: '#d1ad3c' }}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" style={{ color: '#d1ad3c' }} />
+              Ana Sayfaya Dön
+            </Button>
+          </Link>
+        </div>
+        
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">

@@ -285,16 +285,16 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
       className="hover:shadow-lg transition-all duration-300 relative" 
       style={{ 
         backgroundColor: '#252628',
-        border: '1px solid rgba(209, 173, 60, 0.2)',
+        border: '2px solid rgba(209, 173, 60, 0.4)',
         transition: 'box-shadow 0.3s ease, border-color 0.3s ease'
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = '0 0 20px rgba(209, 173, 60, 0.4), 0 0 40px rgba(209, 173, 60, 0.2)';
-        e.currentTarget.style.borderColor = 'rgba(209, 173, 60, 0.5)';
+        e.currentTarget.style.borderColor = 'rgba(209, 173, 60, 0.8)';
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.boxShadow = '';
-        e.currentTarget.style.borderColor = 'rgba(209, 173, 60, 0.2)';
+        e.currentTarget.style.borderColor = 'rgba(209, 173, 60, 0.4)';
       }}
     >
       {/* Hadis Hükmü Badge - Sol Üst Köşe */}
