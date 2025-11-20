@@ -280,6 +280,14 @@ function loadHadisData(): Hadis[] {
         
         let turkce = String(item[2] || '').trim();
         let aciklama = String(item[3] || '').trim();
+        let arapca = String(item[1] || '').trim();
+        let bolumBaslik = bolumBasliklari?.get(bolumKey) || '';
+        
+        // HTML placeholder'ları temizle
+        turkce = cleanHTMLPlaceholders(turkce);
+        aciklama = cleanHTMLPlaceholders(aciklama);
+        arapca = cleanHTMLPlaceholders(arapca);
+        bolumBaslik = cleanHTMLPlaceholders(bolumBaslik);
         
         // Türkçe metin içinde kalan açıklamaları ayır
         const { cleanText: cleanedTurkceText, explanation: extractedExplanation } = extractExplanationFromTurkish(turkce);
@@ -298,8 +306,8 @@ function loadHadisData(): Hadis[] {
         // Hadis hükmünü tespit et
         const hadisHukmu = detectHadisHukmu(
           turkce.trim(),
-          aciklama.trim(),
-          bolumBasliklari?.get(bolumKey) || ''
+          combinedExplanation.trim(),
+          bolumBaslik
         );
         
         // Veri yapısına göre hadis bilgilerini çıkar
@@ -307,9 +315,9 @@ function loadHadisData(): Hadis[] {
           id: String(item[0] || index),
           kitapNo,
           bolumNo,
-          bolumBaslik: bolumBasliklari?.get(bolumKey) || '',
+          bolumBaslik: bolumBaslik,
           hadisNo: String(item[8] || ''),
-          arapca: String(item[1] || ''),
+          arapca: arapca,
           turkce: turkce.trim(),
           aciklama: combinedExplanation || '',
           hadisHukmu: hadisHukmu || null,
