@@ -219,6 +219,7 @@ function cleanText(text: string): string {
     .replace(/\\"/g, '"')
     .replace(/\\t/g, ' ')
     .replace(/\s+/g, ' ') // Birden fazla boşluğu tek boşluğa çevir
+    .replace(/__HTML_PLACEHOLDER_\d+__/g, '') // HTML placeholder'ları kaldır
     .trim();
 }
 
