@@ -125,38 +125,71 @@ function extractExplanationFromTurkish(turkce: string): { cleanText: string; exp
   let cleanText = turkce;
   let extractedExplanation = '';
 
-  // Açıklama pattern'leri (sırayla kontrol et, en spesifik olanlar önce)
-  const explanationPatterns = [
-    // Açıklama: veya AÇIKLAMA: ile başlayanlar
-    /(?:^|\n|\r\n)\s*(?:Açıklama|AÇIKLAMA)\s*[:：]\s*(.+?)(?=\n\s*(?:Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
-    // Not: ile başlayanlar
-    /(?:^|\n|\r\n)\s*Not\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
-    // Şerh: ile başlayanlar
-    /(?:^|\n|\r\n)\s*Şerh\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
-    // İzah: ile başlayanlar
-    /(?:^|\n|\r\n)\s*İzah\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
-    // Dipnot: ile başlayanlar
-    /(?:^|\n|\r\n)\s*Dipnot\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
-  ];
+  // Önce "AÇIKLAMA" (büyük harflerle) pattern'ini kontrol et
+  const aciklamaPattern = /(?:^|\n|\r\n)\s*AÇIKLAMA\s*[:：]?\s*(.+?)(?=\n\s*(?:Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis;
+  const aciklamaMatches = [...turkce.matchAll(aciklamaPattern)];
+  if (aciklamaMatches.length > 0) {
+    // Son eşleşmeyi al
+    const lastMatch = aciklamaMatches[aciklamaMatches.length - 1];
+    if (lastMatch && lastMatch[1]) {
+      const explanationText = lastMatch[1].trim();
+      if (explanationText.length > 3) {
+        // "AÇIKLAMA" ve sonrasındaki tüm metni çıkar
+        const aciklamaStart = turkce.indexOf(lastMatch[0]);
+        const beforeAciklama = turkce.substring(0, aciklamaStart).trim();
+        const afterAciklama = turkce.substring(aciklamaStart + lastMatch[0].length).trim();
+        
+        cleanText = beforeAciklama;
+        extractedExplanation = (explanationText + ' ' + afterAciklama).trim();
+        
+        // Eğer birden fazla eşleşme varsa, hepsini birleştir
+        if (aciklamaMatches.length > 1) {
+          extractedExplanation = aciklamaMatches.map(m => {
+            const startIdx = turkce.indexOf(m[0]);
+            const endIdx = startIdx + m[0].length;
+            const afterMatch = turkce.substring(endIdx).split(/\n\s*(?:Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler)/)[0];
+            return (m[1]?.trim() || '') + ' ' + (afterMatch || '').trim();
+          }).filter(Boolean).join('\n\n');
+        }
+      }
+    }
+  }
 
-  // Tüm açıklama pattern'lerini kontrol et
-  for (const pattern of explanationPatterns) {
-    const matches = [...turkce.matchAll(pattern)];
-    if (matches.length > 0) {
-      // Son eşleşmeyi al (en alttaki açıklama)
-      const lastMatch = matches[matches.length - 1];
-      if (lastMatch && lastMatch[1]) {
-        const explanationText = lastMatch[1].trim();
-        if (explanationText.length > 10) {
-          // Açıklamayı metinden çıkar
-          cleanText = turkce.replace(pattern, '').trim();
-          // Eğer birden fazla eşleşme varsa, hepsini birleştir
-          if (matches.length > 1) {
-            extractedExplanation = matches.map(m => m[1]?.trim()).filter(Boolean).join('\n\n');
-          } else {
-            extractedExplanation = explanationText;
+  // Eğer "AÇIKLAMA" bulunamadıysa, diğer pattern'leri dene
+  if (!extractedExplanation) {
+    // Açıklama pattern'leri (sırayla kontrol et, en spesifik olanlar önce)
+    const explanationPatterns = [
+      // Açıklama: ile başlayanlar
+      /(?:^|\n|\r\n)\s*Açıklama\s*[:：]\s*(.+?)(?=\n\s*(?:Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+      // Not: ile başlayanlar
+      /(?:^|\n|\r\n)\s*Not\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+      // Şerh: ile başlayanlar
+      /(?:^|\n|\r\n)\s*Şerh\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+      // İzah: ile başlayanlar
+      /(?:^|\n|\r\n)\s*İzah\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+      // Dipnot: ile başlayanlar
+      /(?:^|\n|\r\n)\s*Dipnot\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+    ];
+
+    // Tüm açıklama pattern'lerini kontrol et
+    for (const pattern of explanationPatterns) {
+      const matches = [...turkce.matchAll(pattern)];
+      if (matches.length > 0) {
+        // Son eşleşmeyi al (en alttaki açıklama)
+        const lastMatch = matches[matches.length - 1];
+        if (lastMatch && lastMatch[1]) {
+          const explanationText = lastMatch[1].trim();
+          if (explanationText.length > 10) {
+            // Açıklamayı metinden çıkar
+            cleanText = turkce.replace(pattern, '').trim();
+            // Eğer birden fazla eşleşme varsa, hepsini birleştir
+            if (matches.length > 1) {
+              extractedExplanation = matches.map(m => m[1]?.trim()).filter(Boolean).join('\n\n');
+            } else {
+              extractedExplanation = explanationText;
+            }
+            break; // İlk eşleşmede dur
           }
-          break; // İlk eşleşmede dur
         }
       }
     }
