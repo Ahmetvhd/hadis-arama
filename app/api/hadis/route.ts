@@ -44,13 +44,73 @@ function prepareSearchText(text: string): string {
     .trim();
 }
 
-// HTML placeholder'ları temizle
-function cleanHTMLPlaceholders(text: string): string {
+// HTML placeholder'ları temizle ve içindeki bilgileri çıkar
+function cleanHTMLPlaceholders(text: string): { cleanText: string; extractedInfo: string } {
   if (!text || typeof text !== 'string') {
-    return text || '';
+    return { cleanText: text || '', extractedInfo: '' };
   }
-  // Tüm __HTML_PLACEHOLDER_*__ kalıplarını kaldır
-  return text.replace(/__HTML_PLACEHOLDER_\d+__/g, '').trim();
+  
+  let cleanText = text;
+  const extractedInfos: string[] = [];
+  
+  // Placeholder pattern'i
+  const placeholderPattern = /__HTML_PLACEHOLDER_\d+__/g;
+  
+  // Placeholder'ları bul ve etraflarındaki metinleri kontrol et
+  let match;
+  while ((match = placeholderPattern.exec(text)) !== null) {
+    const placeholder = match[0];
+    const placeholderIndex = match.index;
+    const beforePlaceholder = text.substring(Math.max(0, placeholderIndex - 50), placeholderIndex);
+    const afterPlaceholder = text.substring(placeholderIndex + placeholder.length, Math.min(text.length, placeholderIndex + placeholder.length + 50));
+    
+    // Placeholder'ın etrafındaki metinleri birleştir
+    const context = (beforePlaceholder + ' ' + afterPlaceholder).trim();
+    
+    // Rivayet sıfatları ve hüküm terimlerini kontrol et
+    const hukmuPatterns = [
+      /\b(sahih|sahihdir|sahihtir|sahih hadis|sahih olan)\b/gi,
+      /\b(hasen|hasendir|hasentir|hasen hadis|hasen olan)\b/gi,
+      /\b(zayıf|zayiftir|zayifdir|zayıf hadis|zayif hadis|zayıf olan|zayif olan|daif|daiftir|daif hadis)\b/gi,
+      /\b(mevzû|mevzu|mevzudur|mevzutur|mevzû hadis|mevzu hadis|mevzû olan|mevzu olan|uydurma|uydurma hadis)\b/gi,
+    ];
+    
+    // Rivayet sıfatları
+    const raviPatterns = [
+      /\b(ravî|ravi|rivayet|rivayet eden|rivayet eder|rivayet etti)\b/gi,
+      /\b(hadis|hadîs|hadis-i şerif)\b/gi,
+    ];
+    
+    // Eğer placeholder'ın etrafında hüküm veya rivayet bilgisi varsa çıkar
+    for (const pattern of hukmuPatterns) {
+      if (pattern.test(context)) {
+        const hukmuMatch = context.match(pattern);
+        if (hukmuMatch) {
+          extractedInfos.push(hukmuMatch[0].trim());
+        }
+      }
+    }
+    
+    for (const pattern of raviPatterns) {
+      if (pattern.test(context)) {
+        const raviMatch = context.match(pattern);
+        if (raviMatch) {
+          extractedInfos.push(raviMatch[0].trim());
+        }
+      }
+    }
+    
+    // Placeholder'ı metinden kaldır
+    cleanText = cleanText.replace(placeholder, ' ').trim();
+  }
+  
+  // Birden fazla boşluğu tek boşluğa çevir
+  cleanText = cleanText.replace(/\s+/g, ' ').trim();
+  
+  return {
+    cleanText: cleanText,
+    extractedInfo: extractedInfos.length > 0 ? extractedInfos.join(', ') : '',
+  };
 }
 
 // Türkçe metinden kaynak bilgilerini ayır
@@ -379,11 +439,20 @@ function loadHadisData(): Hadis[] {
         let arapca = String(item[1] || '').trim();
         let bolumBaslik = bolumBasliklari?.get(bolumKey) || '';
         
-        // HTML placeholder'ları temizle
-        turkce = cleanHTMLPlaceholders(turkce);
-        aciklama = cleanHTMLPlaceholders(aciklama);
-        arapca = cleanHTMLPlaceholders(arapca);
-        bolumBaslik = cleanHTMLPlaceholders(bolumBaslik);
+        // HTML placeholder'ları temizle ve içindeki bilgileri çıkar
+        const turkceCleaned = cleanHTMLPlaceholders(turkce);
+        turkce = turkceCleaned.cleanText;
+        const turkceExtractedInfo = turkceCleaned.extractedInfo;
+        
+        const aciklamaCleaned = cleanHTMLPlaceholders(aciklama);
+        aciklama = aciklamaCleaned.cleanText;
+        const aciklamaExtractedInfo = aciklamaCleaned.extractedInfo;
+        
+        const arapcaCleaned = cleanHTMLPlaceholders(arapca);
+        arapca = arapcaCleaned.cleanText;
+        
+        const bolumBaslikCleaned = cleanHTMLPlaceholders(bolumBaslik);
+        bolumBaslik = bolumBaslikCleaned.cleanText;
         
         // Türkçe metinden kaynak bilgilerini ayır
         const { cleanText: turkceWithoutSources, sources: extractedSources } = extractSourcesFromTurkish(turkce);
@@ -399,7 +468,7 @@ function loadHadisData(): Hadis[] {
         // Kaynak bilgilerini temizle
         let cleanedSources = extractedSources ? cleanHTMLPlaceholders(extractedSources) : '';
         
-        // Açıklamaları birleştir (kaynak bilgilerini de ekle)
+        // Açıklamaları birleştir (kaynak bilgilerini ve placeholder'lardan çıkarılan bilgileri de ekle)
         const explanationParts = [];
         if (cleanedExtractedExplanation) {
           explanationParts.push(cleanedExtractedExplanation);
@@ -407,13 +476,24 @@ function loadHadisData(): Hadis[] {
         if (cleanedSources) {
           explanationParts.push(`Kaynak: ${cleanedSources}`);
         }
+        // Placeholder'lardan çıkarılan bilgileri ekle
+        if (turkceExtractedInfo) {
+          explanationParts.push(turkceExtractedInfo);
+        }
+        if (aciklamaExtractedInfo) {
+          explanationParts.push(aciklamaExtractedInfo);
+        }
         if (aciklama) {
           explanationParts.push(aciklama);
         }
         let combinedExplanation = explanationParts.join('\n\n').trim();
         
         // Birleştirilmiş açıklamayı da tekrar temizle (güvenlik için)
-        combinedExplanation = cleanHTMLPlaceholders(combinedExplanation);
+        const finalCleaned = cleanHTMLPlaceholders(combinedExplanation);
+        combinedExplanation = finalCleaned.cleanText;
+        if (finalCleaned.extractedInfo) {
+          combinedExplanation = `${finalCleaned.extractedInfo}\n\n${combinedExplanation}`.trim();
+        }
         
         // Hadis hükmünü tespit et
         const hadisHukmu = detectHadisHukmu(
