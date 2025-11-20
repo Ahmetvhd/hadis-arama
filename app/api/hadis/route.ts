@@ -53,6 +53,69 @@ function cleanHTMLPlaceholders(text: string): string {
   return text.replace(/__HTML_PLACEHOLDER_\d+__/g, '').trim();
 }
 
+// Türkçe metinden kaynak bilgilerini ayır
+function extractSourcesFromTurkish(turkce: string): { cleanText: string; sources: string } {
+  if (!turkce || typeof turkce !== 'string') {
+    return { cleanText: turkce || '', sources: '' };
+  }
+
+  let cleanText = turkce;
+  let extractedSources = '';
+
+  // Kaynak pattern'leri
+  const sourcePatterns = [
+    // Kaynak: veya Tahric: ile başlayanlar
+    /(?:^|\n|\r\n)\s*(?:Kaynak|KAYNAK|Tahric|TAHRİC|Diğer tahric|Diğer Tahric|Diğer TAHRİC)\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|İzah|Ravi|Raviler|$)|$)/gis,
+    // Buhari, Muslim, Tirmizi vb. kaynak isimleri ile başlayanlar
+    /\b(?:Buhari|Buharî|Buhârî|Muslim|Müslim|Tirmizi|Tirmizî|Ebu Davud|Ebû Davud|İbn-i Mace|İbn Mace|İbn-i Maceh|İbn Maceh|Malik|Muvatta|Ahmed|Müsned)(?:\s+[^\n]+)?/gi,
+  ];
+
+  // Kaynak bilgilerini bul ve çıkar
+  const foundSources: string[] = [];
+  
+  // Önce "Kaynak:" veya "Tahric:" ile başlayanları bul
+  const sourceHeaderPattern = /(?:^|\n|\r\n)\s*(?:Kaynak|KAYNAK|Tahric|TAHRİC|Diğer tahric|Diğer Tahric|Diğer TAHRİC)\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|İzah|Ravi|Raviler|$)|$)/gis;
+  let match;
+  while ((match = sourceHeaderPattern.exec(turkce)) !== null) {
+    if (match[1] && match[1].trim().length > 3) {
+      foundSources.push(match[1].trim());
+      // Metinden çıkar
+      cleanText = cleanText.replace(match[0], '').trim();
+    }
+  }
+
+  // Eğer kaynak başlığı bulunamadıysa, kaynak isimlerini ara
+  if (foundSources.length === 0) {
+    const sourceNamePattern = /\b(?:Buhari|Buharî|Buhârî|Muslim|Müslim|Tirmizi|Tirmizî|Ebu Davud|Ebû Davud|İbn-i Mace|İbn Mace|İbn-i Maceh|İbn Maceh|Malik|Muvatta|Ahmed|Müsned)(?:\s+[^\n]+)?/gi;
+    const sourceMatches = turkce.match(sourceNamePattern);
+    if (sourceMatches && sourceMatches.length > 0) {
+      // Kaynak isimlerinden sonra gelen metni bul
+      for (const sourceMatch of sourceMatches) {
+        const sourceIndex = turkce.indexOf(sourceMatch);
+        if (sourceIndex >= 0) {
+          // Kaynak isminden sonraki metni al (satır sonuna kadar veya noktalama işaretine kadar)
+          const afterSource = turkce.substring(sourceIndex + sourceMatch.length);
+          const sourceText = (sourceMatch + afterSource.split(/[\.\n]/)[0]).trim();
+          if (sourceText.length > sourceMatch.length + 5) {
+            foundSources.push(sourceText);
+            // Metinden çıkar
+            cleanText = cleanText.replace(sourceText, '').trim();
+          }
+        }
+      }
+    }
+  }
+
+  if (foundSources.length > 0) {
+    extractedSources = foundSources.join('; ').trim();
+  }
+
+  return {
+    cleanText: cleanText.trim(),
+    sources: extractedSources.trim(),
+  };
+}
+
 // Türkçe metinden açıklamaları ayır
 function extractExplanationFromTurkish(turkce: string): { cleanText: string; explanation: string } {
   if (!turkce || typeof turkce !== 'string') {
@@ -289,6 +352,10 @@ function loadHadisData(): Hadis[] {
         arapca = cleanHTMLPlaceholders(arapca);
         bolumBaslik = cleanHTMLPlaceholders(bolumBaslik);
         
+        // Türkçe metinden kaynak bilgilerini ayır
+        const { cleanText: turkceWithoutSources, sources: extractedSources } = extractSourcesFromTurkish(turkce);
+        turkce = turkceWithoutSources;
+        
         // Türkçe metin içinde kalan açıklamaları ayır
         const { cleanText: cleanedTurkceText, explanation: extractedExplanation } = extractExplanationFromTurkish(turkce);
         turkce = cleanedTurkceText;
@@ -296,10 +363,16 @@ function loadHadisData(): Hadis[] {
         // Çıkarılan açıklamayı da temizle
         let cleanedExtractedExplanation = extractedExplanation ? cleanHTMLPlaceholders(extractedExplanation) : '';
         
-        // Açıklamaları birleştir
+        // Kaynak bilgilerini temizle
+        let cleanedSources = extractedSources ? cleanHTMLPlaceholders(extractedSources) : '';
+        
+        // Açıklamaları birleştir (kaynak bilgilerini de ekle)
         const explanationParts = [];
         if (cleanedExtractedExplanation) {
           explanationParts.push(cleanedExtractedExplanation);
+        }
+        if (cleanedSources) {
+          explanationParts.push(`Kaynak: ${cleanedSources}`);
         }
         if (aciklama) {
           explanationParts.push(aciklama);
