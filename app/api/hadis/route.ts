@@ -44,12 +44,16 @@ function prepareSearchText(text: string): string {
     .trim();
 }
 
-// HTML placeholder'ları temizle
+// HTML placeholder'ları temizle - placeholder'lar HTML tag'lerini temsil ettiği için
+// bunları kaldırmak yerine, eğer veri kaynağında varsa temizlemek için kullanılır
+// Ancak placeholder'lar genellikle UI'da oluşturulur, bu yüzden bu fonksiyon
+// sadece veri kaynağındaki placeholder'ları temizlemek için kullanılır
 function cleanHTMLPlaceholders(text: string): string {
   if (!text || typeof text !== 'string') {
     return text || '';
   }
-  // Tüm __HTML_PLACEHOLDER_*__ kalıplarını kaldır
+  // Eğer veri kaynağında placeholder varsa, bunları kaldır
+  // (placeholder'lar genellikle UI'da oluşturulur, ama güvenlik için temizliyoruz)
   return text.replace(/__HTML_PLACEHOLDER_\d+__/g, '').trim();
 }
 
