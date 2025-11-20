@@ -141,6 +141,24 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
         return '#d1ad3c'; // Altın (varsayılan)
     }
   };
+  
+  // Hüküm badge rengi (arka plan için yarı şeffaf)
+  const getHukmuBgColor = (hukmu: string | null | undefined): string => {
+    if (!hukmu) return '';
+    switch (hukmu.toLowerCase()) {
+      case 'sahih':
+        return 'rgba(16, 185, 129, 0.2)'; // Yeşil yarı şeffaf
+      case 'hasen':
+        return 'rgba(59, 130, 246, 0.2)'; // Mavi yarı şeffaf
+      case 'zayıf':
+        return 'rgba(245, 158, 11, 0.2)'; // Turuncu yarı şeffaf
+      case 'mevzû':
+      case 'mevzu':
+        return 'rgba(239, 68, 68, 0.2)'; // Kırmızı yarı şeffaf
+      default:
+        return 'rgba(209, 173, 60, 0.2)'; // Altın yarı şeffaf
+    }
+  };
 
   return (
     <Card className="hover:shadow-lg transition-shadow relative" style={{ backgroundColor: '#252628' }}>
@@ -149,13 +167,13 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
         <div 
           className="absolute top-2 left-2 z-10"
           style={{ 
-            backgroundColor: getHukmuColor(hadis.hadisHukmu),
+            backgroundColor: getHukmuBgColor(hadis.hadisHukmu),
+            border: `1px solid ${getHukmuColor(hadis.hadisHukmu)}`,
             borderRadius: '4px',
             padding: '4px 8px',
             fontSize: '12px',
             fontWeight: '600',
-            color: 'white',
-            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+            color: getHukmuColor(hadis.hadisHukmu),
           }}
         >
           {hadis.hadisHukmu}
