@@ -383,33 +383,38 @@ function loadHadisData(): Hadis[] {
   }
 
   try {
-    const hadislerJsonDir = path.join(process.cwd(), 'hadislerjson');
-    const partFiles = ['hadisler_part_1.json', 'hadisler_part_2.json', 'hadisler_part_3.json'];
+    // hadisler.json dosyasını kullan
+    const hadislerJsonPath = path.join(process.cwd(), 'hadisler.json');
+    
+    if (!fs.existsSync(hadislerJsonPath)) {
+      console.error('hadisler.json dosyası bulunamadı:', hadislerJsonPath);
+      return [];
+    }
+    
+    // Dosyayı oku
+    const fileContent = fs.readFileSync(hadislerJsonPath, 'utf-8');
+    const rawData: any[][] = JSON.parse(fileContent);
+    
+    if (!Array.isArray(rawData) || rawData.length === 0) {
+      console.error('hadisler.json dosyası geçersiz format');
+      return [];
+    }
     
     let allRawData: any[][] = [];
-    let firstPartProcessed = false;
     
-    // Tüm parça dosyalarını oku
-    for (const partFile of partFiles) {
-      const filePath = path.join(hadislerJsonDir, partFile);
-      if (fs.existsSync(filePath)) {
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        const rawData: any[][] = JSON.parse(fileContent);
-        
-        // İlk dosyadan bölüm başlıklarını parse et
-        if (!firstPartProcessed && rawData.length > 0 && Array.isArray(rawData[0]) && rawData[0].length > 100) {
-          bolumBasliklari = new Map();
-          const basliklar = rawData[0];
-          // Her 4 eleman bir bölüm: [id, kitapNo, bolumNo, baslik]
-          for (let i = 0; i < basliklar.length - 3; i += 4) {
-            const bolumKey = `${basliklar[i+1]}-${basliklar[i+2]}`;
-            bolumBasliklari.set(bolumKey, String(basliklar[i+3] || ''));
-          }
-          firstPartProcessed = true;
-        }
-        
-        allRawData = allRawData.concat(rawData);
+    // Bölüm başlıklarını parse et (ilk kayıt genellikle başlıkları içerir)
+    if (rawData.length > 0 && Array.isArray(rawData[0]) && rawData[0].length > 100) {
+      bolumBasliklari = new Map();
+      const basliklar = rawData[0];
+      // Her 4 eleman bir bölüm: [id, kitapNo, bolumNo, baslik]
+      for (let i = 0; i < basliklar.length - 3; i += 4) {
+        const bolumKey = `${basliklar[i+1]}-${basliklar[i+2]}`;
+        bolumBasliklari.set(bolumKey, String(basliklar[i+3] || ''));
       }
+      // İlk kaydı atla (başlıklar)
+      allRawData = rawData.slice(1);
+    } else {
+      allRawData = rawData;
     }
     
     hadisData = allRawData
