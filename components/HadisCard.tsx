@@ -369,7 +369,8 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
                 dangerouslySetInnerHTML={{
                   __html: highlightText(
                     expandedAciklama ? cleanedAciklama : aciklamaPreview,
-                    searchQuery
+                    searchQuery,
+                    hadis.hadisHukmu
                   ),
                 }}
               />
