@@ -196,51 +196,8 @@ function loadHadisData(): Hadis[] {
         const bolumNo = String(item[7] || '');
         const bolumKey = `${kitapNo}-${bolumNo}`;
         
-        let turkce = String(item[2] || '').trim();
-        let aciklama = String(item[3] || '').trim();
-        
-        // Türkçe metin boşsa veya çok kısaysa, açıklamadan veya Arapça metinden al
-        if (!turkce || turkce.length < 10) {
-          // Açıklama varsa onu kullan
-          if (aciklama && aciklama.length > 10) {
-            turkce = aciklama;
-            aciklama = '';
-          } else {
-            // Arapça metni Türkçe olarak kullan (geçici çözüm)
-            const arapca = String(item[1] || '').trim();
-            if (arapca && arapca.length > 10) {
-              turkce = arapca;
-            }
-          }
-        }
-        
-        // Eğer açıklama Türkçe metin içinde birleşik geliyorsa ayır
-        // Açıklama genellikle "Açıklama:", "Not:", "Dipnot:" gibi kelimelerle başlar
-        if (turkce && aciklama) {
-          // Türkçe metin içinde açıklama varsa ve ayrı bir açıklama alanı da varsa
-          // Türkçe metinden açıklama kısmını çıkar
-          const aciklamaPatterns = [
-            /(?:^|\n)\s*(?:Açıklama|Not|Dipnot|Açıklama:|Not:|Dipnot:)\s*[:]\s*(.+)/i,
-            /(?:^|\n)\s*(?:Açıklama|Not|Dipnot)\s*[:]\s*(.+)/i
-          ];
-          
-          for (const pattern of aciklamaPatterns) {
-            const match = turkce.match(pattern);
-            if (match && match[1]) {
-              // Türkçe metinden açıklama kısmını çıkar
-              turkce = turkce.replace(pattern, '').trim();
-              // Eğer ayrı bir açıklama yoksa, bulduğumuz açıklamayı kullan
-              if (!aciklama || aciklama.trim().length < 10) {
-                aciklama = match[1].trim();
-              }
-            }
-          }
-        }
-        
-        // Son kontrol: Türkçe metin hala boşsa veya çok kısaysa bu hadisi atla
-        if (!turkce || turkce.trim().length < 10) {
-          return null;
-        }
+        const turkce = String(item[2] || '').trim();
+        const aciklama = String(item[3] || '').trim();
         
         // Hadis hükmünü tespit et
         const hadisHukmu = detectHadisHukmu(
