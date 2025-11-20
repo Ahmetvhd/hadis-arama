@@ -24,7 +24,10 @@ interface HadisCardProps {
 }
 
 function highlightText(text: string, query: string): string {
-  if (!query.trim()) return text;
+  if (!query.trim()) {
+    // Query yoksa, HTML içindeki renkleri beyaz yap
+    return text.replace(/style="[^"]*color:[^"]*"/gi, 'style="color: white;"');
+  }
   
   // HTML içeriğini korumak için önce HTML taglerini geçici olarak değiştir
   const htmlTagRegex = /<[^>]+>/g;
@@ -54,6 +57,19 @@ function highlightText(text: string, query: string): string {
     return part;
   }).join('');
   
+  // HTML içindeki renkleri beyaz yap (lacivert veya diğer renkleri kaldır)
+  highlighted = highlighted.replace(/style="[^"]*color:\s*[^;"]+[^"]*"/gi, (match) => {
+    // Eğer zaten color: white varsa olduğu gibi bırak
+    if (match.includes('color: white') || match.includes('color:white')) {
+      return match;
+    }
+    // Diğer renkleri white ile değiştir
+    return match.replace(/color:\s*[^;"]+/gi, 'color: white');
+  });
+  
+  // Class'lardaki renk tanımlarını da temizle (text-blue, text-slate gibi)
+  highlighted = highlighted.replace(/\b(text-(blue|indigo|slate|gray|grey|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|violet|purple|fuchsia|pink|rose)-\d+|text-(blue|indigo|slate|gray|grey|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|violet|purple|fuchsia|pink|rose))\b/gi, 'text-white');
+  
   return highlighted;
 }
 
@@ -75,18 +91,23 @@ function cleanText(text: string): string {
 function formatHadisText(text: string): string {
   if (!text) return '';
   
+  // Önce mevcut renkleri temizle
+  let cleanedText = text.replace(/style="[^"]*color:[^"]*"/gi, '');
+  cleanedText = cleanedText.replace(/\b(text-(blue|indigo|slate|gray|grey|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|violet|purple|fuchsia|pink|rose)-\d+|text-(blue|indigo|slate|gray|grey|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|violet|purple|fuchsia|pink|rose))\b/gi, '');
+  
   // ":" karakterini bul (ilk geçtiği yerde)
-  const colonIndex = text.indexOf(':');
+  const colonIndex = cleanedText.indexOf(':');
   
   if (colonIndex > 0 && colonIndex < 100) { // Sadece başta (ilk 100 karakter içinde) ise
-    const beforeColon = text.substring(0, colonIndex).trim();
-    const afterColon = text.substring(colonIndex + 1).trim();
+    const beforeColon = cleanedText.substring(0, colonIndex).trim();
+    const afterColon = cleanedText.substring(colonIndex + 1).trim();
     
     // Önceki kısmı kalın ve beyaz renk yap (daha belirgin)
-    return `<span class="font-bold text-white" style="font-weight: 700; font-size: 1.05em; color: white;">${beforeColon}:</span> ${afterColon}`;
+    return `<span class="font-bold text-white" style="font-weight: 700; font-size: 1.05em; color: white !important;">${beforeColon}:</span> <span style="color: white !important;">${afterColon}</span>`;
   }
   
-  return text;
+  // Eğer ":" yoksa, tüm metni beyaz yap
+  return `<span style="color: white !important;">${cleanedText}</span>`;
 }
 
 function cleanArabicText(text: string): string {
@@ -198,6 +219,8 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
             </h4>
             <div className="text-white leading-relaxed">
               <p
+                style={{ color: 'white' }}
+                className="text-white"
                 dangerouslySetInnerHTML={{
                   __html: highlightText(
                     formatHadisText(expandedTurkce ? cleanedTurkce : turkcePreview),
