@@ -98,7 +98,7 @@ export default function Home() {
                 textShadow: '0 0 20px rgba(209, 173, 60, 0.5), 0 0 40px rgba(209, 173, 60, 0.3)',
               }}
             >
-              Peygamberimiz <span className="text-xs" style={{ fontSize: '0.5em', verticalAlign: 'middle' }}>(s.a.v.)</span> Mirası
+              Peygamberimiz'in <span className="text-xs" style={{ fontSize: '0.4em', verticalAlign: 'middle', opacity: 0.9 }}>(s.a.v.)</span> Mirası
             </h2>
           </div>
           
