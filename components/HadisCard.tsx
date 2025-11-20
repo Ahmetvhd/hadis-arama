@@ -155,13 +155,26 @@ function highlightText(text: string, query: string, hadisHukmu?: string | null):
   highlighted = parts.map((part, index) => {
     try {
       // Placeholder'ları geri yükle
-      if (part.startsWith('__HTML_PLACEHOLDER_')) {
-        const idxStr = part.replace('__HTML_PLACEHOLDER_', '').replace('__', '');
-        const idx = parseInt(idxStr, 10);
-        if (!isNaN(idx) && idx >= 0 && idx < placeholders.length) {
-          return placeholders[idx];
+      if (part.includes('__HTML_PLACEHOLDER_')) {
+        // Placeholder pattern'ini bul ve geri yükle
+        const placeholderRegex = /__HTML_PLACEHOLDER_(\d+)__/g;
+        let result = part;
+        let match;
+        
+        while ((match = placeholderRegex.exec(part)) !== null) {
+          const idx = parseInt(match[1], 10);
+          if (!isNaN(idx) && idx >= 0 && idx < placeholders.length) {
+            result = result.replace(match[0], placeholders[idx]);
+          } else {
+            // Geçersiz placeholder'ı kaldır
+            result = result.replace(match[0], '');
+          }
         }
-        return part;
+        
+        // Eğer hala placeholder kaldıysa, tüm placeholder'ları temizle
+        result = result.replace(/__HTML_PLACEHOLDER_\d+__/g, '');
+        
+        return result;
       }
       
       if (part.toLowerCase() === query.toLowerCase()) {
@@ -172,6 +185,9 @@ function highlightText(text: string, query: string, hadisHukmu?: string | null):
       return part;
     }
   }).join('');
+  
+  // Son kontrol: Kalan tüm placeholder'ları temizle
+  highlighted = highlighted.replace(/__HTML_PLACEHOLDER_\d+__/g, '');
   
   // HTML içindeki renkleri beyaz yap (hüküm renkleri ve arama vurgusu hariç)
   highlighted = highlighted.replace(/style="[^"]*color:\s*[^;"]+[^"]*"/gi, (match) => {
