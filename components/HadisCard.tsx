@@ -380,9 +380,9 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
                 <p
                   dangerouslySetInnerHTML={{
                     __html: highlightText(
-                      expandedArapca ? cleanedArapca : arapcaPreview,
-                      searchQuery,
-                      hadis.hadisHukmu
+                      (expandedArapca ? cleanedArapca : arapcaPreview) || '',
+                      searchQuery || '',
+                      hadis.hadisHukmu || null
                     ),
                   }}
                 />
