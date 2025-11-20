@@ -44,6 +44,15 @@ function prepareSearchText(text: string): string {
     .trim();
 }
 
+// HTML placeholder'ları temizle
+function cleanHTMLPlaceholders(text: string): string {
+  if (!text || typeof text !== 'string') {
+    return text || '';
+  }
+  // Tüm __HTML_PLACEHOLDER_*__ kalıplarını kaldır
+  return text.replace(/__HTML_PLACEHOLDER_\d+__/g, '').trim();
+}
+
 // Türkçe metinden açıklamaları ayır
 function extractExplanationFromTurkish(turkce: string): { cleanText: string; explanation: string } {
   if (!turkce || typeof turkce !== 'string') {
