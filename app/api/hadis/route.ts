@@ -293,15 +293,21 @@ function loadHadisData(): Hadis[] {
         const { cleanText: cleanedTurkceText, explanation: extractedExplanation } = extractExplanationFromTurkish(turkce);
         turkce = cleanedTurkceText;
         
+        // Çıkarılan açıklamayı da temizle
+        let cleanedExtractedExplanation = extractedExplanation ? cleanHTMLPlaceholders(extractedExplanation) : '';
+        
         // Açıklamaları birleştir
         const explanationParts = [];
-        if (extractedExplanation) {
-          explanationParts.push(extractedExplanation);
+        if (cleanedExtractedExplanation) {
+          explanationParts.push(cleanedExtractedExplanation);
         }
         if (aciklama) {
           explanationParts.push(aciklama);
         }
-        const combinedExplanation = explanationParts.join('\n\n').trim();
+        let combinedExplanation = explanationParts.join('\n\n').trim();
+        
+        // Birleştirilmiş açıklamayı da tekrar temizle (güvenlik için)
+        combinedExplanation = cleanHTMLPlaceholders(combinedExplanation);
         
         // Hadis hükmünü tespit et
         const hadisHukmu = detectHadisHukmu(
