@@ -25,15 +25,35 @@ interface HadisCardProps {
 function highlightText(text: string, query: string): string {
   if (!query.trim()) return text;
   
-  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-  const parts = text.split(regex);
+  // HTML içeriğini korumak için önce HTML taglerini geçici olarak değiştir
+  const htmlTagRegex = /<[^>]+>/g;
+  const placeholders: string[] = [];
+  let placeholderIndex = 0;
   
-  return parts.map((part, index) => {
+  let textWithPlaceholders = text.replace(htmlTagRegex, (match) => {
+    const placeholder = `__HTML_PLACEHOLDER_${placeholderIndex}__`;
+    placeholders[placeholderIndex] = match;
+    placeholderIndex++;
+    return placeholder;
+  });
+  
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = textWithPlaceholders.split(regex);
+  
+  let highlighted = parts.map((part, index) => {
+    // Placeholder'ları geri yükle
+    if (part.startsWith('__HTML_PLACEHOLDER_')) {
+      const idx = parseInt(part.replace('__HTML_PLACEHOLDER_', '').replace('__', ''));
+      return placeholders[idx];
+    }
+    
     if (part.toLowerCase() === query.toLowerCase()) {
       return `<mark class="bg-yellow-200 dark:bg-yellow-900 px-1 rounded">${part}</mark>`;
     }
     return part;
   }).join('');
+  
+  return highlighted;
 }
 
 function cleanText(text: string): string {
@@ -48,6 +68,24 @@ function cleanText(text: string): string {
     .replace(/\\t/g, ' ')
     .replace(/\s+/g, ' ') // Birden fazla boşluğu tek boşluğa çevir
     .trim();
+}
+
+// ":" karakterinden önceki kısmı kalın ve koyu renk yap
+function formatHadisText(text: string): string {
+  if (!text) return '';
+  
+  // ":" karakterini bul (ilk geçtiği yerde)
+  const colonIndex = text.indexOf(':');
+  
+  if (colonIndex > 0 && colonIndex < 100) { // Sadece başta (ilk 100 karakter içinde) ise
+    const beforeColon = text.substring(0, colonIndex).trim();
+    const afterColon = text.substring(colonIndex + 1).trim();
+    
+    // Önceki kısmı kalın ve koyu renk yap (daha belirgin)
+    return `<span class="font-bold text-gray-900 dark:text-gray-100" style="font-weight: 700; font-size: 1.05em;">${beforeColon}:</span> ${afterColon}`;
+  }
+  
+  return text;
 }
 
 function cleanArabicText(text: string): string {
@@ -125,7 +163,7 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
               <p
                 dangerouslySetInnerHTML={{
                   __html: highlightText(
-                    expandedTurkce ? cleanedTurkce : turkcePreview,
+                    formatHadisText(expandedTurkce ? cleanedTurkce : turkcePreview),
                     searchQuery
                   ),
                 }}

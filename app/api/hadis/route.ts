@@ -94,6 +94,32 @@ function loadHadisData(): Hadis[] {
         const bolumNo = String(item[7] || '');
         const bolumKey = `${kitapNo}-${bolumNo}`;
         
+        let turkce = String(item[2] || '');
+        let aciklama = String(item[3] || '');
+        
+        // Eğer açıklama Türkçe metin içinde birleşik geliyorsa ayır
+        // Açıklama genellikle "Açıklama:", "Not:", "Dipnot:" gibi kelimelerle başlar
+        if (turkce && aciklama) {
+          // Türkçe metin içinde açıklama varsa ve ayrı bir açıklama alanı da varsa
+          // Türkçe metinden açıklama kısmını çıkar
+          const aciklamaPatterns = [
+            /(?:^|\n)\s*(?:Açıklama|Not|Dipnot|Açıklama:|Not:|Dipnot:)\s*[:]\s*(.+)/i,
+            /(?:^|\n)\s*(?:Açıklama|Not|Dipnot)\s*[:]\s*(.+)/i
+          ];
+          
+          for (const pattern of aciklamaPatterns) {
+            const match = turkce.match(pattern);
+            if (match && match[1]) {
+              // Türkçe metinden açıklama kısmını çıkar
+              turkce = turkce.replace(pattern, '').trim();
+              // Eğer ayrı bir açıklama yoksa, bulduğumuz açıklamayı kullan
+              if (!aciklama || aciklama.trim().length < 10) {
+                aciklama = match[1].trim();
+              }
+            }
+          }
+        }
+        
         // Veri yapısına göre hadis bilgilerini çıkar
         const hadis: Hadis = {
           id: String(item[0] || index),
@@ -102,8 +128,8 @@ function loadHadisData(): Hadis[] {
           bolumBaslik: bolumBasliklari?.get(bolumKey) || '',
           hadisNo: String(item[8] || ''),
           arapca: String(item[1] || ''),
-          turkce: String(item[2] || ''),
-          aciklama: String(item[3] || ''),
+          turkce: turkce.trim(),
+          aciklama: aciklama.trim(),
         };
         return hadis;
       })
