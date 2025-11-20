@@ -185,6 +185,7 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
   const [expandedTurkce, setExpandedTurkce] = useState(false);
   const [expandedArapca, setExpandedArapca] = useState(false);
   const [expandedAciklama, setExpandedAciklama] = useState(false);
+  const [showAciklama, setShowAciklama] = useState(false);
 
   const cleanedTurkce = cleanText(hadis.turkce);
   const cleanedArapca = cleanArabicText(hadis.arapca);
@@ -283,66 +284,36 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Türkçe Metin */}
-        {cleanedTurkce && (
-          <div>
-            <h4 className="font-semibold mb-2 flex items-center gap-2 text-white">
-              <FileText className="h-4 w-4" style={{ color: '#d1ad3c' }} />
-              Türkçe Metin
-            </h4>
-            <div className="text-white leading-relaxed">
-              <p
-                style={{ color: 'white' }}
-                className="text-white"
-                dangerouslySetInnerHTML={{
-                  __html: highlightText(
-                    expandedTurkce ? cleanedTurkce : turkcePreview,
-                    searchQuery,
-                    hadis.hadisHukmu
-                  ),
-                }}
-              />
-              {cleanedTurkce.length > MAX_PREVIEW_LENGTH && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setExpandedTurkce(!expandedTurkce)}
-                  className="mt-2 hover:bg-[#d1ad3c]/20"
-                  style={{ color: '#d1ad3c' }}
-                >
-                  {expandedTurkce ? (
-                    <>
-                      <ChevronUp className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
-                      Daha Az Göster
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
-                      Devamını Oku
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Arapça Metin */}
-        {cleanedArapca && (
-          <div>
-            <h4 className="font-semibold mb-2 text-white">Arapça Metin</h4>
-            <div className="text-right text-lg leading-relaxed font-arabic text-white" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
-              <p>{expandedArapca ? cleanedArapca : arapcaPreview}</p>
-              {cleanedArapca.length > MAX_PREVIEW_LENGTH && (
-                <div className="text-left mt-2">
+        {/* Türkçe ve Arapça Metinler - Yan Yana */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Türkçe Metin - Sol */}
+          {cleanedTurkce && (
+            <div className="text-left">
+              <h4 className="font-semibold mb-2 flex items-center gap-2 text-white">
+                <FileText className="h-4 w-4" style={{ color: '#d1ad3c' }} />
+                Türkçe Metin
+              </h4>
+              <div className="text-white leading-relaxed">
+                <p
+                  style={{ color: 'white' }}
+                  className="text-white"
+                  dangerouslySetInnerHTML={{
+                    __html: highlightText(
+                      expandedTurkce ? cleanedTurkce : turkcePreview,
+                      searchQuery,
+                      hadis.hadisHukmu
+                    ),
+                  }}
+                />
+                {cleanedTurkce.length > MAX_PREVIEW_LENGTH && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setExpandedArapca(!expandedArapca)}
-                    className="hover:bg-[#d1ad3c]/20"
+                    onClick={() => setExpandedTurkce(!expandedTurkce)}
+                    className="mt-2 hover:bg-[#d1ad3c]/20"
                     style={{ color: '#d1ad3c' }}
                   >
-                    {expandedArapca ? (
+                    {expandedTurkce ? (
                       <>
                         <ChevronUp className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
                         Daha Az Göster
@@ -354,48 +325,105 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
                       </>
                     )}
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Açıklama */}
+          {/* Arapça Metin - Sağ */}
+          {cleanedArapca && (
+            <div className="text-right">
+              <h4 className="font-semibold mb-2 text-white">Arapça Metin</h4>
+              <div className="text-right text-lg leading-relaxed font-arabic text-white" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
+                <p>{expandedArapca ? cleanedArapca : arapcaPreview}</p>
+                {cleanedArapca.length > MAX_PREVIEW_LENGTH && (
+                  <div className="text-left mt-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setExpandedArapca(!expandedArapca)}
+                      className="hover:bg-[#d1ad3c]/20"
+                      style={{ color: '#d1ad3c' }}
+                    >
+                      {expandedArapca ? (
+                        <>
+                          <ChevronUp className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
+                          Daha Az Göster
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
+                          Devamını Oku
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Açıklama - Alt Kısım */}
         {cleanedAciklama && (
           <div className="pt-4 border-t" style={{ borderColor: '#3a3b3d' }}>
-            <h4 className="font-semibold mb-2 text-white">Açıklama</h4>
-            <div className="text-white leading-relaxed text-sm">
-              <p
-                dangerouslySetInnerHTML={{
-                  __html: highlightText(
-                    expandedAciklama ? cleanedAciklama : aciklamaPreview,
-                    searchQuery,
-                    hadis.hadisHukmu
-                  ),
-                }}
-              />
-              {cleanedAciklama.length > MAX_PREVIEW_LENGTH && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setExpandedAciklama(!expandedAciklama)}
-                  className="mt-2 hover:bg-[#d1ad3c]/20"
-                  style={{ color: '#d1ad3c' }}
-                >
-                  {expandedAciklama ? (
-                    <>
-                      <ChevronUp className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
-                      Daha Az Göster
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
-                      Devamını Oku
-                    </>
+            {!showAciklama ? (
+              <Button
+                variant="outline"
+                onClick={() => setShowAciklama(true)}
+                className="w-full border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
+              >
+                Açıklamayı Oku
+              </Button>
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-white">Açıklama</h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAciklama(false)}
+                    className="hover:bg-[#d1ad3c]/20"
+                    style={{ color: '#d1ad3c' }}
+                  >
+                    <ChevronUp className="h-4 w-4" style={{ color: '#d1ad3c' }} />
+                  </Button>
+                </div>
+                <div className="text-white leading-relaxed text-sm">
+                  <p
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        expandedAciklama ? cleanedAciklama : aciklamaPreview,
+                        searchQuery,
+                        hadis.hadisHukmu
+                      ),
+                    }}
+                  />
+                  {cleanedAciklama.length > MAX_PREVIEW_LENGTH && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setExpandedAciklama(!expandedAciklama)}
+                      className="mt-2 hover:bg-[#d1ad3c]/20"
+                      style={{ color: '#d1ad3c' }}
+                    >
+                      {expandedAciklama ? (
+                        <>
+                          <ChevronUp className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
+                          Daha Az Göster
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
+                          Devamını Oku
+                        </>
+                      )}
+                    </Button>
                   )}
-                </Button>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
