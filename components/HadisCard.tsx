@@ -125,13 +125,14 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
     : cleanedAciklama;
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow" style={{ backgroundColor: '#252628' }}>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <CardTitle className="text-xl mb-2 flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
+            <CardTitle className="text-xl mb-2 flex items-center gap-2 text-white">
+              <BookOpen className="h-5 w-5" style={{ color: '#d1ad3c' }} />
               <span
+                className="text-white"
                 dangerouslySetInnerHTML={{
                   __html: highlightText(cleanedBolumBaslik, searchQuery),
                 }}
@@ -139,13 +140,13 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
             </CardTitle>
             <div className="flex flex-wrap gap-2 mt-2">
               {hadis.kitapNo && (
-                <Badge variant="secondary">Kitap: {hadis.kitapNo}</Badge>
+                <Badge variant="secondary" className="bg-[#d1ad3c] text-black">Kitap: {hadis.kitapNo}</Badge>
               )}
               {hadis.bolumNo && (
-                <Badge variant="secondary">Bölüm: {hadis.bolumNo}</Badge>
+                <Badge variant="secondary" className="bg-[#d1ad3c] text-black">Bölüm: {hadis.bolumNo}</Badge>
               )}
               {hadis.hadisNo && (
-                <Badge variant="outline">Hadis No: {hadis.hadisNo}</Badge>
+                <Badge variant="outline" className="border-[#d1ad3c] text-[#d1ad3c]">Hadis No: {hadis.hadisNo}</Badge>
               )}
             </div>
           </div>
@@ -155,11 +156,11 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
         {/* Türkçe Metin */}
         {cleanedTurkce && (
           <div>
-            <h4 className="font-semibold mb-2 flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+            <h4 className="font-semibold mb-2 flex items-center gap-2 text-white">
+              <FileText className="h-4 w-4" style={{ color: '#d1ad3c' }} />
               Türkçe Metin
             </h4>
-            <div className="text-foreground leading-relaxed">
+            <div className="text-white leading-relaxed">
               <p
                 dangerouslySetInnerHTML={{
                   __html: highlightText(
@@ -173,16 +174,17 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => setExpandedTurkce(!expandedTurkce)}
-                  className="mt-2 text-primary hover:text-primary/80"
+                  className="mt-2 hover:bg-[#d1ad3c]/20"
+                  style={{ color: '#d1ad3c' }}
                 >
                   {expandedTurkce ? (
                     <>
-                      <ChevronUp className="h-4 w-4 mr-1" />
+                      <ChevronUp className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
                       Daha Az Göster
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="h-4 w-4 mr-1" />
+                      <ChevronDown className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
                       Devamını Oku
                     </>
                   )}
@@ -195,8 +197,8 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
         {/* Arapça Metin */}
         {cleanedArapca && (
           <div>
-            <h4 className="font-semibold mb-2">Arapça Metin</h4>
-            <div className="text-right text-lg leading-relaxed font-arabic" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
+            <h4 className="font-semibold mb-2 text-white">Arapça Metin</h4>
+            <div className="text-right text-lg leading-relaxed font-arabic text-white" dir="rtl" style={{ fontFamily: 'Arial, sans-serif' }}>
               <p>{expandedArapca ? cleanedArapca : arapcaPreview}</p>
               {cleanedArapca.length > MAX_PREVIEW_LENGTH && (
                 <div className="text-left mt-2">
@@ -204,16 +206,17 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => setExpandedArapca(!expandedArapca)}
-                    className="text-primary hover:text-primary/80"
+                    className="hover:bg-[#d1ad3c]/20"
+                    style={{ color: '#d1ad3c' }}
                   >
                     {expandedArapca ? (
                       <>
-                        <ChevronUp className="h-4 w-4 mr-1" />
+                        <ChevronUp className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
                         Daha Az Göster
                       </>
                     ) : (
                       <>
-                        <ChevronDown className="h-4 w-4 mr-1" />
+                        <ChevronDown className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
                         Devamını Oku
                       </>
                     )}
@@ -226,9 +229,9 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
 
         {/* Açıklama */}
         {cleanedAciklama && (
-          <div className="pt-4 border-t">
-            <h4 className="font-semibold mb-2">Açıklama</h4>
-            <div className="text-muted-foreground leading-relaxed text-sm">
+          <div className="pt-4 border-t" style={{ borderColor: '#3a3b3d' }}>
+            <h4 className="font-semibold mb-2 text-white">Açıklama</h4>
+            <div className="text-white leading-relaxed text-sm">
               <p
                 dangerouslySetInnerHTML={{
                   __html: highlightText(
@@ -242,16 +245,17 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => setExpandedAciklama(!expandedAciklama)}
-                  className="mt-2 text-primary hover:text-primary/80"
+                  className="mt-2 hover:bg-[#d1ad3c]/20"
+                  style={{ color: '#d1ad3c' }}
                 >
                   {expandedAciklama ? (
                     <>
-                      <ChevronUp className="h-4 w-4 mr-1" />
+                      <ChevronUp className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
                       Daha Az Göster
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="h-4 w-4 mr-1" />
+                      <ChevronDown className="h-4 w-4 mr-1" style={{ color: '#d1ad3c' }} />
                       Devamını Oku
                     </>
                   )}

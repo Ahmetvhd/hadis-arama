@@ -85,33 +85,33 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-black">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Header - Kitap Sembolü Ortada */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <BookOpen className="h-12 w-12 text-primary" />
-            <h1 className="text-5xl font-bold text-foreground">Hadis Arama</h1>
+          <div className="flex items-center justify-center mb-8">
+            <BookOpen className="h-16 w-16" style={{ color: '#d1ad3c' }} />
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
-            Güçlü arama özellikleri ile hadisleri kolayca bulun
-          </p>
-          <div className="flex gap-3 justify-center flex-wrap">
-            <Link href="/kitaplar">
-              <Button variant="outline" className="gap-2">
-                <BookOpen className="h-4 w-4" />
-                Kitapları Görüntüle
-              </Button>
-            </Link>
+          
+          {/* Butonlar Üstte */}
+          <div className="flex gap-3 justify-center flex-wrap mb-8">
             <Link href="/alimler">
-              <Button variant="outline" className="gap-2">
-                <GraduationCap className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                className="gap-2 border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
+              >
+                <GraduationCap className="h-4 w-4" style={{ color: '#d1ad3c' }} />
                 Hadis Alimleri
               </Button>
             </Link>
             <Link href="/yol-haritasi">
-              <Button variant="outline" className="gap-2">
-                <Map className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                className="gap-2 border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
+              >
+                <Map className="h-4 w-4" style={{ color: '#d1ad3c' }} />
                 Yol Haritası
               </Button>
             </Link>
@@ -119,20 +119,27 @@ export default function Home() {
         </div>
 
         {/* Search Bar */}
-        <Card className="mb-8 shadow-lg">
+        <Card className="mb-8 shadow-lg" style={{ backgroundColor: '#252628' }}>
           <CardContent className="pt-6">
             <form onSubmit={handleSearch} className="flex gap-4">
               <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#d1ad3c' }} />
                 <Input
                   type="text"
                   placeholder="Hadis metninde, açıklamada veya bölüm başlığında ara..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="pl-10 h-12 text-lg"
+                  className="pl-10 h-12 text-lg bg-[#252628] text-white border-gray-700 focus:border-[#d1ad3c]"
+                  style={{ backgroundColor: '#252628', color: 'white' }}
                 />
               </div>
-              <Button type="submit" size="lg" className="px-8" disabled={loading}>
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="px-8" 
+                disabled={loading}
+                style={{ backgroundColor: '#d1ad3c', color: 'black' }}
+              >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -153,8 +160,8 @@ export default function Home() {
         {searchQuery && (
           <div className="mb-6">
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground">
-                <strong className="text-foreground">{total}</strong> hadis bulundu
+              <p className="text-white">
+                <strong style={{ color: '#d1ad3c' }}>{total}</strong> hadis bulundu
               </p>
               {totalPages > 1 && (
                 <div className="flex gap-2">
@@ -162,16 +169,20 @@ export default function Home() {
                     variant="outline"
                     onClick={() => handlePageChange(page - 1)}
                     disabled={page === 1 || loading}
+                    className="border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                    style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
                   >
                     Önceki
                   </Button>
-                  <span className="flex items-center px-4 text-sm text-muted-foreground">
+                  <span className="flex items-center px-4 text-sm text-white">
                     Sayfa {page} / {totalPages}
                   </span>
                   <Button
                     variant="outline"
                     onClick={() => handlePageChange(page + 1)}
                     disabled={page === totalPages || loading}
+                    className="border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                    style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
                   >
                     Sonraki
                   </Button>
@@ -184,7 +195,7 @@ export default function Home() {
         {/* Results List */}
         {loading && results.length === 0 ? (
           <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#d1ad3c' }} />
           </div>
         ) : results.length > 0 ? (
           <div className="space-y-4">
@@ -193,19 +204,19 @@ export default function Home() {
             ))}
           </div>
         ) : searchQuery ? (
-          <Card className="text-center py-12">
+          <Card className="text-center py-12" style={{ backgroundColor: '#252628' }}>
             <CardContent>
-              <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg text-muted-foreground">
+              <FileText className="h-16 w-16 mx-auto mb-4" style={{ color: '#d1ad3c' }} />
+              <p className="text-lg text-white">
                 Aradığınız kriterlere uygun hadis bulunamadı.
               </p>
             </CardContent>
           </Card>
         ) : (
-          <Card className="text-center py-12">
+          <Card className="text-center py-12" style={{ backgroundColor: '#252628' }}>
             <CardContent>
-              <Search className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg text-muted-foreground">
+              <Search className="h-16 w-16 mx-auto mb-4" style={{ color: '#d1ad3c' }} />
+              <p className="text-lg text-white">
                 Arama yapmak için yukarıdaki kutuya bir kelime veya cümle yazın.
               </p>
             </CardContent>
