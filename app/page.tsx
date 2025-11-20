@@ -86,7 +86,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header - Kitap Sembolü Ortada */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center mb-8">

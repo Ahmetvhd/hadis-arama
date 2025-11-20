@@ -421,7 +421,7 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
               <Button
                 variant="outline"
                 onClick={() => setShowAciklama(true)}
-                className="w-full border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                className="border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
                 style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
               >
                 Açıklamayı Oku
