@@ -44,6 +44,79 @@ function prepareSearchText(text: string): string {
     .trim();
 }
 
+// Türkçe metinden açıklamaları ayır
+function extractExplanationFromTurkish(turkce: string): { cleanText: string; explanation: string } {
+  if (!turkce || typeof turkce !== 'string') {
+    return { cleanText: turkce || '', explanation: '' };
+  }
+
+  let cleanText = turkce;
+  let extractedExplanation = '';
+
+  // Açıklama pattern'leri (sırayla kontrol et, en spesifik olanlar önce)
+  const explanationPatterns = [
+    // Açıklama: veya AÇIKLAMA: ile başlayanlar
+    /(?:^|\n|\r\n)\s*(?:Açıklama|AÇIKLAMA)\s*[:：]\s*(.+?)(?=\n\s*(?:Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+    // Not: ile başlayanlar
+    /(?:^|\n|\r\n)\s*Not\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+    // Şerh: ile başlayanlar
+    /(?:^|\n|\r\n)\s*Şerh\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+    // İzah: ile başlayanlar
+    /(?:^|\n|\r\n)\s*İzah\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+    // Dipnot: ile başlayanlar
+    /(?:^|\n|\r\n)\s*Dipnot\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+  ];
+
+  // Tüm açıklama pattern'lerini kontrol et
+  for (const pattern of explanationPatterns) {
+    const matches = [...turkce.matchAll(pattern)];
+    if (matches.length > 0) {
+      // Son eşleşmeyi al (en alttaki açıklama)
+      const lastMatch = matches[matches.length - 1];
+      if (lastMatch && lastMatch[1]) {
+        const explanationText = lastMatch[1].trim();
+        if (explanationText.length > 10) {
+          // Açıklamayı metinden çıkar
+          cleanText = turkce.replace(pattern, '').trim();
+          // Eğer birden fazla eşleşme varsa, hepsini birleştir
+          if (matches.length > 1) {
+            extractedExplanation = matches.map(m => m[1]?.trim()).filter(Boolean).join('\n\n');
+          } else {
+            extractedExplanation = explanationText;
+          }
+          break; // İlk eşleşmede dur
+        }
+      }
+    }
+  }
+
+  // Eğer açıklama bulunamadıysa, daha genel pattern'ler dene
+  if (!extractedExplanation) {
+    // "Açıklama" kelimesi geçiyorsa ve sonrasında metin varsa
+    const generalPattern = /(?:^|\n|\r\n)\s*(?:Açıklama|AÇIKLAMA|Not|Şerh|İzah|Dipnot)\s*[:：]?\s*(.+)/gi;
+    const match = turkce.match(generalPattern);
+    if (match && match.length > 0) {
+      const lastMatch = match[match.length - 1];
+      const explanationStart = turkce.indexOf(lastMatch);
+      if (explanationStart > 0) {
+        const beforeExplanation = turkce.substring(0, explanationStart).trim();
+        const afterExplanation = turkce.substring(explanationStart + lastMatch.length).trim();
+        
+        // Eğer açıklama kısmı yeterince uzunsa
+        if (afterExplanation.length > 10 || lastMatch.length > 20) {
+          cleanText = beforeExplanation;
+          extractedExplanation = (lastMatch.replace(/^(?:Açıklama|AÇIKLAMA|Not|Şerh|İzah|Dipnot)\s*[:：]?\s*/i, '') + ' ' + afterExplanation).trim();
+        }
+      }
+    }
+  }
+
+  return {
+    cleanText: cleanText.trim(),
+    explanation: extractedExplanation.trim(),
+  };
+}
+
 // Hadis hükmünü tespit et (sahih, hasen, zayıf, mevzû)
 function detectHadisHukmu(turkce: string, aciklama: string, bolumBaslik: string): string | null {
   const searchText = `${turkce} ${aciklama} ${bolumBaslik}`.toLowerCase();
@@ -196,8 +269,22 @@ function loadHadisData(): Hadis[] {
         const bolumNo = String(item[7] || '');
         const bolumKey = `${kitapNo}-${bolumNo}`;
         
-        const turkce = String(item[2] || '').trim();
-        const aciklama = String(item[3] || '').trim();
+        let turkce = String(item[2] || '').trim();
+        let aciklama = String(item[3] || '').trim();
+        
+        // Türkçe metin içinde kalan açıklamaları ayır
+        const { cleanText: cleanedTurkceText, explanation: extractedExplanation } = extractExplanationFromTurkish(turkce);
+        turkce = cleanedTurkceText;
+        
+        // Açıklamaları birleştir
+        const explanationParts = [];
+        if (extractedExplanation) {
+          explanationParts.push(extractedExplanation);
+        }
+        if (aciklama) {
+          explanationParts.push(aciklama);
+        }
+        const combinedExplanation = explanationParts.join('\n\n').trim();
         
         // Hadis hükmünü tespit et
         const hadisHukmu = detectHadisHukmu(
@@ -215,7 +302,7 @@ function loadHadisData(): Hadis[] {
           hadisNo: String(item[8] || ''),
           arapca: String(item[1] || ''),
           turkce: turkce.trim(),
-          aciklama: aciklama.trim(),
+          aciklama: combinedExplanation || '',
           hadisHukmu: hadisHukmu || null,
         };
         return hadis;
