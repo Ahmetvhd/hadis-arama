@@ -155,7 +155,7 @@ export default function Home() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#d1ad3c' }} />
                 <Input
                   type="text"
-                  placeholder="Hadis metninde, açıklamada veya bölüm başlığında ara..."
+                  placeholder="…Resûl size neyi vermişse onu alın, neyi de yasaklamışsa onu bırakın… Haşr,7"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="pl-10 h-12 text-lg bg-[#252628] text-white border-gray-700 focus:border-[#d1ad3c] placeholder:text-gray-400"
