@@ -52,30 +52,31 @@ export default function KitaplarPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-black">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <BookOpen className="h-10 w-10 text-primary" />
-            <h1 className="text-4xl font-bold text-foreground">Kitaplar</h1>
+            <BookOpen className="h-10 w-10" style={{ color: '#d1ad3c' }} />
+            <h1 className="text-4xl font-bold text-white">Kitaplar</h1>
           </div>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-white/80">
             Hadis kitaplarına göz atın ve bölümlerini keşfedin
           </p>
         </div>
 
         {/* Search */}
-        <Card className="mb-6">
+        <Card className="mb-6" style={{ backgroundColor: '#252628' }}>
           <CardContent className="pt-6">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#d1ad3c' }} />
               <Input
                 type="text"
                 placeholder="Kitap ara..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-[#252628] text-white border-gray-700 focus:border-[#d1ad3c] placeholder:text-gray-400"
+                style={{ backgroundColor: '#252628', color: 'white' }}
               />
             </div>
           </CardContent>
@@ -84,37 +85,41 @@ export default function KitaplarPage() {
         {/* Results */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#d1ad3c' }} />
           </div>
         ) : (
           <>
             <div className="mb-4">
-              <p className="text-muted-foreground">
-                <strong className="text-foreground">{filteredKitaplar.length}</strong> kitap bulundu
+              <p className="text-white">
+                <strong style={{ color: '#d1ad3c' }}>{filteredKitaplar.length}</strong> kitap bulundu
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredKitaplar.map((kitap) => (
-                <Card key={kitap.no} className="hover:shadow-lg transition-shadow">
+                <Card key={kitap.no} className="hover:shadow-lg transition-shadow" style={{ backgroundColor: '#252628' }}>
                   <CardHeader>
-                    <CardTitle className="text-xl flex items-center justify-between">
+                    <CardTitle className="text-xl flex items-center justify-between text-white">
                       <span className="font-semibold">{kitap.name}</span>
-                      <Badge variant="secondary">#{kitap.no}</Badge>
+                      <Badge variant="secondary" className="bg-[#d1ad3c] text-black">#{kitap.no}</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Bölüm Sayısı:</span>
-                        <Badge variant="outline">{kitap.bolumSayisi}</Badge>
+                        <span className="text-white/80">Bölüm Sayısı:</span>
+                        <Badge variant="outline" className="border-[#d1ad3c] text-[#d1ad3c]">{kitap.bolumSayisi}</Badge>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Hadis Sayısı:</span>
-                        <Badge variant="outline">{kitap.hadisSayisi}</Badge>
+                        <span className="text-white/80">Hadis Sayısı:</span>
+                        <Badge variant="outline" className="border-[#d1ad3c] text-[#d1ad3c]">{kitap.hadisSayisi}</Badge>
                       </div>
                       <Link href={`/kitap/${kitap.no}`}>
-                        <Button variant="default" className="w-full mt-4">
+                        <Button 
+                          variant="default" 
+                          className="w-full mt-4"
+                          style={{ backgroundColor: '#d1ad3c', color: 'black' }}
+                        >
                           Kitabı Aç
                         </Button>
                       </Link>
@@ -125,10 +130,10 @@ export default function KitaplarPage() {
             </div>
 
             {filteredKitaplar.length === 0 && !loading && (
-              <Card className="text-center py-12">
+              <Card className="text-center py-12" style={{ backgroundColor: '#252628' }}>
                 <CardContent>
-                  <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg text-muted-foreground">
+                  <BookOpen className="h-16 w-16 mx-auto mb-4" style={{ color: '#d1ad3c' }} />
+                  <p className="text-lg text-white">
                     {searchQuery
                       ? 'Aradığınız kriterlere uygun kitap bulunamadı.'
                       : 'Henüz kitap bulunmuyor.'}

@@ -90,29 +90,33 @@ export default function AlimDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-black">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link href="/alimler">
-            <Button variant="ghost" className="mb-4">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              className="mb-4 text-white hover:bg-[#252628]"
+              style={{ color: '#d1ad3c' }}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" style={{ color: '#d1ad3c' }} />
               Alimlere Dön
             </Button>
           </Link>
-          <Card className="mb-6">
+          <Card className="mb-6" style={{ backgroundColor: '#252628' }}>
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="flex items-center justify-center gap-3 mb-2">
-                  <GraduationCap className="h-8 w-8 text-primary" />
-                  <h1 className="text-4xl font-bold text-foreground">{alimName}</h1>
+                  <GraduationCap className="h-8 w-8" style={{ color: '#d1ad3c' }} />
+                  <h1 className="text-4xl font-bold text-white">{alimName}</h1>
                 </div>
                 <div className="flex items-center justify-center gap-4 mt-4">
-                  <Badge variant="default" className="text-lg px-4 py-2">
+                  <Badge variant="default" className="text-lg px-4 py-2 bg-[#d1ad3c] text-black">
                     {total} Hadis
                   </Badge>
                 </div>
-                <p className="text-lg text-muted-foreground mt-4">
+                <p className="text-lg text-white/80 mt-4">
                   Bu alimin eserindeki hadisler aşağıda listelenmiştir
                 </p>
               </div>
@@ -124,8 +128,8 @@ export default function AlimDetailPage() {
         {!loading && (
           <div className="mb-6">
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground">
-                <strong className="text-foreground">{total}</strong> hadis bulundu
+              <p className="text-white">
+                <strong style={{ color: '#d1ad3c' }}>{total}</strong> hadis bulundu
               </p>
               {totalPages > 1 && (
                 <div className="flex gap-2">
@@ -133,16 +137,20 @@ export default function AlimDetailPage() {
                     variant="outline"
                     onClick={() => handlePageChange(page - 1)}
                     disabled={page === 1 || loading}
+                    className="border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                    style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
                   >
                     Önceki
                   </Button>
-                  <span className="flex items-center px-4 text-sm text-muted-foreground">
+                  <span className="flex items-center px-4 text-sm text-white">
                     Sayfa {page} / {totalPages}
                   </span>
                   <Button
                     variant="outline"
                     onClick={() => handlePageChange(page + 1)}
                     disabled={page === totalPages || loading}
+                    className="border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                    style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
                   >
                     Sonraki
                   </Button>
@@ -155,7 +163,7 @@ export default function AlimDetailPage() {
         {/* Results List */}
         {loading && results.length === 0 ? (
           <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#d1ad3c' }} />
           </div>
         ) : results.length > 0 ? (
           <div className="space-y-4">
@@ -164,9 +172,9 @@ export default function AlimDetailPage() {
             ))}
           </div>
         ) : (
-          <Card className="text-center py-12">
+          <Card className="text-center py-12" style={{ backgroundColor: '#252628' }}>
             <CardContent>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-lg text-white">
                 Bu alime ait hadis bulunamadı.
               </p>
             </CardContent>

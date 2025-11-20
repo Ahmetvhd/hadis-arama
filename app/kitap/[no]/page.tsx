@@ -42,28 +42,32 @@ export default function KitapDetailPage() {
   const toplamHadis = bolumler.reduce((sum, bolum) => sum + bolum.hadisSayisi, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-black">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link href="/kitaplar">
-            <Button variant="ghost" className="mb-4">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+            <Button 
+              variant="ghost" 
+              className="mb-4 text-white hover:bg-[#252628]"
+              style={{ color: '#d1ad3c' }}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" style={{ color: '#d1ad3c' }} />
               Kitaplara Dön
             </Button>
           </Link>
-          <Card className="mb-6">
+          <Card className="mb-6" style={{ backgroundColor: '#252628' }}>
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="flex items-center justify-center gap-3 mb-2">
-                  <BookOpen className="h-8 w-8 text-primary" />
-                  <h1 className="text-4xl font-bold text-foreground">Kitap {kitapNo}</h1>
+                  <BookOpen className="h-8 w-8" style={{ color: '#d1ad3c' }} />
+                  <h1 className="text-4xl font-bold text-white">Kitap {kitapNo}</h1>
                 </div>
                 <div className="flex items-center justify-center gap-4 mt-4">
-                  <Badge variant="default" className="text-lg px-4 py-2">
+                  <Badge variant="default" className="text-lg px-4 py-2 bg-[#d1ad3c] text-black">
                     {bolumler.length} Bölüm
                   </Badge>
-                  <Badge variant="secondary" className="text-lg px-4 py-2">
+                  <Badge variant="secondary" className="text-lg px-4 py-2 bg-[#d1ad3c] text-black">
                     {toplamHadis} Hadis
                   </Badge>
                 </div>
@@ -75,37 +79,41 @@ export default function KitapDetailPage() {
         {/* Bölümler Listesi */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#d1ad3c' }} />
           </div>
         ) : (
           <>
             <div className="mb-4">
-              <h2 className="text-2xl font-bold text-foreground mb-2">Bölümler</h2>
-              <p className="text-muted-foreground">
+              <h2 className="text-2xl font-bold text-white mb-2">Bölümler</h2>
+              <p className="text-white/80">
                 Bu kitaptaki tüm bölümler aşağıda listelenmiştir
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {bolumler.map((bolum) => (
-                <Card key={bolum.no} className="hover:shadow-lg transition-shadow">
+                <Card key={bolum.no} className="hover:shadow-lg transition-shadow" style={{ backgroundColor: '#252628' }}>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center justify-between text-white">
                       <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-primary" />
+                        <FileText className="h-5 w-5" style={{ color: '#d1ad3c' }} />
                         <span className="font-semibold">{bolum.name}</span>
                       </div>
-                      <Badge variant="secondary">#{bolum.no}</Badge>
+                      <Badge variant="secondary" className="bg-[#d1ad3c] text-black">#{bolum.no}</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Hadis Sayısı:</span>
-                        <Badge variant="outline">{bolum.hadisSayisi}</Badge>
+                        <span className="text-white/80">Hadis Sayısı:</span>
+                        <Badge variant="outline" className="border-[#d1ad3c] text-[#d1ad3c]">{bolum.hadisSayisi}</Badge>
                       </div>
                       <Link href={`/kitap/${kitapNo}/bolum/${bolum.no}`}>
-                        <Button variant="default" className="w-full">
+                        <Button 
+                          variant="default" 
+                          className="w-full"
+                          style={{ backgroundColor: '#d1ad3c', color: 'black' }}
+                        >
                           Bölümü Aç
                         </Button>
                       </Link>
@@ -116,10 +124,10 @@ export default function KitapDetailPage() {
             </div>
 
             {bolumler.length === 0 && !loading && (
-              <Card className="text-center py-12">
+              <Card className="text-center py-12" style={{ backgroundColor: '#252628' }}>
                 <CardContent>
-                  <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg text-muted-foreground">
+                  <FileText className="h-16 w-16 mx-auto mb-4" style={{ color: '#d1ad3c' }} />
+                  <p className="text-lg text-white">
                     Bu kitapta henüz bölüm bulunmuyor.
                   </p>
                 </CardContent>

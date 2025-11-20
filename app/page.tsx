@@ -98,8 +98,18 @@ export default function Home() {
             <Link href="/alimler">
               <Button 
                 variant="outline" 
-                className="gap-2 border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                className="gap-2 border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black transition-colors"
                 style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#000000';
+                  const icon = e.currentTarget.querySelector('svg');
+                  if (icon) icon.style.color = '#000000';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#d1ad3c';
+                  const icon = e.currentTarget.querySelector('svg');
+                  if (icon) icon.style.color = '#d1ad3c';
+                }}
               >
                 <GraduationCap className="h-4 w-4" style={{ color: '#d1ad3c' }} />
                 Hadis Alimleri
@@ -108,8 +118,18 @@ export default function Home() {
             <Link href="/yol-haritasi">
               <Button 
                 variant="outline" 
-                className="gap-2 border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black"
+                className="gap-2 border-[#d1ad3c] text-[#d1ad3c] hover:bg-[#d1ad3c] hover:text-black transition-colors"
                 style={{ borderColor: '#d1ad3c', color: '#d1ad3c' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#000000';
+                  const icon = e.currentTarget.querySelector('svg');
+                  if (icon) icon.style.color = '#000000';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#d1ad3c';
+                  const icon = e.currentTarget.querySelector('svg');
+                  if (icon) icon.style.color = '#d1ad3c';
+                }}
               >
                 <Map className="h-4 w-4" style={{ color: '#d1ad3c' }} />
                 Yol Haritası
