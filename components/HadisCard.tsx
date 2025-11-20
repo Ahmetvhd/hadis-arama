@@ -24,6 +24,11 @@ interface HadisCardProps {
 }
 
 function highlightText(text: string, query: string, hadisHukmu?: string | null): string {
+  // Null/undefined kontrolü
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+  
   // Önce hüküm terimlerini renklendir (hadisHukmu olsun ya da olmasın, metin içinde geçen tüm hüküm terimlerini renklendir)
   let highlighted = text;
   
@@ -83,23 +88,37 @@ function highlightText(text: string, query: string, hadisHukmu?: string | null):
   
   // Öncelik sırası: Zayıf > Mevzû > Hasen > Sahih (daha spesifik olanlar önce)
   // Ters sırada işle ki daha spesifik olanlar önce eşleşsin
-  for (let i = hukmuPatterns.length - 1; i >= 0; i--) {
-    const hukmu = hukmuPatterns[i];
-    for (const pattern of hukmu.patterns) {
-      highlighted = highlighted.replace(pattern, (match, offset, string) => {
-        // Eğer zaten HTML tag içindeyse değiştirme
-        const beforeMatch = string.substring(Math.max(0, offset - 50), offset);
-        const afterMatch = string.substring(offset + match.length, offset + match.length + 50);
-        if (beforeMatch.includes('<span') || afterMatch.includes('</span>')) {
-          return match;
-        }
-        // Eğer zaten renklendirilmişse değiştirme
-        if (beforeMatch.includes('style="color:') || beforeMatch.includes("style='color:")) {
-          return match;
-        }
-        return `<span style="color: ${hukmu.color}; font-weight: 600;">${match}</span>`;
-      });
+  try {
+    for (let i = hukmuPatterns.length - 1; i >= 0; i--) {
+      const hukmu = hukmuPatterns[i];
+      for (const pattern of hukmu.patterns) {
+        highlighted = highlighted.replace(pattern, (match, ...args) => {
+          try {
+            // offset ve string parametrelerini güvenli şekilde al
+            const offset = typeof args[0] === 'number' ? args[0] : 0;
+            const string = typeof args[1] === 'string' ? args[1] : highlighted;
+            
+            // Eğer zaten HTML tag içindeyse değiştirme
+            const beforeMatch = string.substring(Math.max(0, offset - 50), offset);
+            const afterMatch = string.substring(offset + match.length, Math.min(string.length, offset + match.length + 50));
+            if (beforeMatch.includes('<span') || afterMatch.includes('</span>')) {
+              return match;
+            }
+            // Eğer zaten renklendirilmişse değiştirme
+            if (beforeMatch.includes('style="color:') || beforeMatch.includes("style='color:")) {
+              return match;
+            }
+            return `<span style="color: ${hukmu.color}; font-weight: 600;">${match}</span>`;
+          } catch (e) {
+            // Hata durumunda orijinal match'i döndür
+            return match;
+          }
+        });
+      }
     }
+  } catch (e) {
+    // Hata durumunda orijinal metni döndür
+    console.error('Hüküm terimi renklendirme hatası:', e);
   }
   
   if (!query.trim()) {
@@ -134,16 +153,24 @@ function highlightText(text: string, query: string, hadisHukmu?: string | null):
   const parts = textWithPlaceholders.split(regex);
   
   highlighted = parts.map((part, index) => {
-    // Placeholder'ları geri yükle
-    if (part.startsWith('__HTML_PLACEHOLDER_')) {
-      const idx = parseInt(part.replace('__HTML_PLACEHOLDER_', '').replace('__', ''));
-      return placeholders[idx];
+    try {
+      // Placeholder'ları geri yükle
+      if (part.startsWith('__HTML_PLACEHOLDER_')) {
+        const idxStr = part.replace('__HTML_PLACEHOLDER_', '').replace('__', '');
+        const idx = parseInt(idxStr, 10);
+        if (!isNaN(idx) && idx >= 0 && idx < placeholders.length) {
+          return placeholders[idx];
+        }
+        return part;
+      }
+      
+      if (part.toLowerCase() === query.toLowerCase()) {
+        return `<mark class="bg-yellow-200 dark:bg-yellow-900 px-1 rounded">${part}</mark>`;
+      }
+      return part;
+    } catch (e) {
+      return part;
     }
-    
-    if (part.toLowerCase() === query.toLowerCase()) {
-      return `<mark class="bg-yellow-200 dark:bg-yellow-900 px-1 rounded">${part}</mark>`;
-    }
-    return part;
   }).join('');
   
   // HTML içindeki renkleri beyaz yap (hüküm renkleri ve arama vurgusu hariç)
@@ -202,10 +229,10 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
   const [expandedAciklama, setExpandedAciklama] = useState(false);
   const [showAciklama, setShowAciklama] = useState(false);
 
-  const cleanedTurkce = cleanText(hadis.turkce);
-  const cleanedArapca = cleanArabicText(hadis.arapca);
-  const cleanedAciklama = cleanText(hadis.aciklama);
-  const cleanedBolumBaslik = cleanText(hadis.bolumBaslik);
+  const cleanedTurkce = cleanText(hadis.turkce || '');
+  const cleanedArapca = cleanArabicText(hadis.arapca || '');
+  const cleanedAciklama = cleanText(hadis.aciklama || '');
+  const cleanedBolumBaslik = cleanText(hadis.bolumBaslik || '');
 
   const turkcePreview = cleanedTurkce.length > MAX_PREVIEW_LENGTH 
     ? cleanedTurkce.substring(0, MAX_PREVIEW_LENGTH) 
@@ -280,7 +307,7 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
               <span
                 className="text-white"
                 dangerouslySetInnerHTML={{
-                  __html: highlightText(cleanedBolumBaslik, searchQuery, hadis.hadisHukmu),
+                  __html: highlightText(cleanedBolumBaslik, searchQuery || '', hadis.hadisHukmu || null),
                 }}
               />
             </CardTitle>
@@ -315,8 +342,8 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
                   dangerouslySetInnerHTML={{
                     __html: highlightText(
                       expandedTurkce ? cleanedTurkce : turkcePreview,
-                      searchQuery,
-                      hadis.hadisHukmu
+                      searchQuery || '',
+                      hadis.hadisHukmu || null
                     ),
                   }}
                 />
@@ -416,11 +443,11 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
                 <div className="text-white leading-relaxed text-sm">
                   <p
                     dangerouslySetInnerHTML={{
-                      __html: highlightText(
-                        expandedAciklama ? cleanedAciklama : aciklamaPreview,
-                        searchQuery,
-                        hadis.hadisHukmu
-                      ),
+                  __html: highlightText(
+                    expandedAciklama ? cleanedAciklama : aciklamaPreview,
+                    searchQuery || '',
+                    hadis.hadisHukmu || null
+                  ),
                     }}
                   />
                   {cleanedAciklama.length > MAX_PREVIEW_LENGTH && (
