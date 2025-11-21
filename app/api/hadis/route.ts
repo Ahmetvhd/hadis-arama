@@ -133,14 +133,21 @@ function extractSourcesFromTurkish(turkce: string): { cleanText: string; sources
   // Kaynak bilgilerini bul ve çıkar
   const foundSources: string[] = [];
   
-  // Önce "Kaynak:" veya "Tahric:" ile başlayanları bul
-  const sourceHeaderPattern = /(?:^|\n|\r\n)\s*(?:Kaynak|KAYNAK|Tahric|TAHRİC|Diğer tahric|Diğer Tahric|Diğer TAHRİC)\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|İzah|Ravi|Raviler|$)|$)/gis;
+  // Önce "Kaynak:" veya "Tahric:" ile başlayanları bul - sonrasındaki TÜM metni al
+  const sourceHeaderPattern = /(?:^|\n|\r\n)\s*(?:Kaynak|KAYNAK|Tahric|TAHRİC|Diğer tahric|Diğer Tahric|Diğer TAHRİC)\s*[:：]\s*(.+)/gis;
   let match;
   while ((match = sourceHeaderPattern.exec(turkce)) !== null) {
-    if (match[1] && match[1].trim().length > 3) {
-      foundSources.push(match[1].trim());
+    if (match[1] && match[1].trim().length > 0) {
+      // Sonrasındaki tüm metni al
+      const matchStart = turkce.indexOf(match[0]);
+      const afterMatch = turkce.substring(matchStart + match[0].length).trim();
+      const fullSource = (match[1].trim() + ' ' + afterMatch).trim();
+      foundSources.push(fullSource);
       // Metinden çıkar
       cleanText = cleanText.replace(match[0], '').trim();
+      if (afterMatch) {
+        cleanText = cleanText.replace(afterMatch, '').trim();
+      }
     }
   }
 
@@ -149,14 +156,17 @@ function extractSourcesFromTurkish(turkce: string): { cleanText: string; sources
     const sourceNamePattern = /\b(?:Buhari|Buharî|Buhârî|Muslim|Müslim|Tirmizi|Tirmizî|Ebu Davud|Ebû Davud|İbn-i Mace|İbn Mace|İbn-i Maceh|İbn Maceh|Malik|Muvatta|Ahmed|Müsned)(?:\s+[^\n]+)?/gi;
     const sourceMatches = turkce.match(sourceNamePattern);
     if (sourceMatches && sourceMatches.length > 0) {
-      // Kaynak isimlerinden sonra gelen metni bul
+      // Kaynak isimlerinden sonra gelen metni bul - daha fazla metin al
       for (const sourceMatch of sourceMatches) {
         const sourceIndex = turkce.indexOf(sourceMatch);
         if (sourceIndex >= 0) {
-          // Kaynak isminden sonraki metni al (satır sonuna kadar veya noktalama işaretine kadar)
+          // Kaynak isminden sonraki metni al - daha uzun metin almak için sınırları genişlet
           const afterSource = turkce.substring(sourceIndex + sourceMatch.length);
-          const sourceText = (sourceMatch + afterSource.split(/[\.\n]/)[0]).trim();
-          if (sourceText.length > sourceMatch.length + 5) {
+          // Satır sonuna kadar veya bir sonraki ana başlığa kadar al
+          const nextSection = afterSource.match(/\n\s*(?:Açıklama|Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler)/);
+          const sourceTextEnd = nextSection ? nextSection.index : afterSource.length;
+          const sourceText = (sourceMatch + afterSource.substring(0, sourceTextEnd)).trim();
+          if (sourceText.length > sourceMatch.length) {
             foundSources.push(sourceText);
             // Metinden çıkar
             cleanText = cleanText.replace(sourceText, '').trim();
@@ -186,29 +196,39 @@ function extractExplanationFromTurkish(turkce: string): { cleanText: string; exp
   let extractedExplanation = '';
 
   // Önce "AÇIKLAMA" (büyük harflerle) pattern'ini kontrol et
-  const aciklamaPattern = /(?:^|\n|\r\n)\s*AÇIKLAMA\s*[:：]?\s*(.+?)(?=\n\s*(?:Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis;
+  const aciklamaPattern = /(?:^|\n|\r\n)\s*AÇIKLAMA\s*[:：]?\s*(.+)/gis;
   const aciklamaMatches = [...turkce.matchAll(aciklamaPattern)];
   if (aciklamaMatches.length > 0) {
     // Son eşleşmeyi al
     const lastMatch = aciklamaMatches[aciklamaMatches.length - 1];
     if (lastMatch && lastMatch[1]) {
       const explanationText = lastMatch[1].trim();
-      if (explanationText.length > 3) {
-        // "AÇIKLAMA" ve sonrasındaki tüm metni çıkar
+      if (explanationText.length > 0) {
+        // "AÇIKLAMA" ve sonrasındaki TÜM metni çıkar (sınırlama yok)
         const aciklamaStart = turkce.indexOf(lastMatch[0]);
         const beforeAciklama = turkce.substring(0, aciklamaStart).trim();
         const afterAciklama = turkce.substring(aciklamaStart + lastMatch[0].length).trim();
         
         cleanText = beforeAciklama;
-        extractedExplanation = (explanationText + ' ' + afterAciklama).trim();
+        extractedExplanation = afterAciklama || explanationText;
         
         // Eğer birden fazla eşleşme varsa, hepsini birleştir
         if (aciklamaMatches.length > 1) {
           extractedExplanation = aciklamaMatches.map(m => {
             const startIdx = turkce.indexOf(m[0]);
             const endIdx = startIdx + m[0].length;
-            const afterMatch = turkce.substring(endIdx).split(/\n\s*(?:Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler)/)[0];
-            return (m[1]?.trim() || '') + ' ' + (afterMatch || '').trim();
+            // Son eşleşmeden sonraki tüm metni al
+            if (m === lastMatch) {
+              return turkce.substring(endIdx).trim();
+            } else {
+              // Diğer eşleşmeler için sonraki eşleşmeye kadar al
+              const nextMatchIdx = aciklamaMatches.findIndex(mm => mm !== m && turkce.indexOf(mm[0]) > startIdx);
+              if (nextMatchIdx >= 0) {
+                const nextStart = turkce.indexOf(aciklamaMatches[nextMatchIdx][0]);
+                return turkce.substring(endIdx, nextStart).trim();
+              }
+              return turkce.substring(endIdx).trim();
+            }
           }).filter(Boolean).join('\n\n');
         }
       }
@@ -218,17 +238,18 @@ function extractExplanationFromTurkish(turkce: string): { cleanText: string; exp
   // Eğer "AÇIKLAMA" bulunamadıysa, diğer pattern'leri dene
   if (!extractedExplanation) {
     // Açıklama pattern'leri (sırayla kontrol et, en spesifik olanlar önce)
+    // Tüm açıklamayı almak için sınırlama kaldırıldı
     const explanationPatterns = [
-      // Açıklama: ile başlayanlar
-      /(?:^|\n|\r\n)\s*Açıklama\s*[:：]\s*(.+?)(?=\n\s*(?:Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+      // Açıklama: ile başlayanlar - sonrasındaki TÜM metni al
+      /(?:^|\n|\r\n)\s*Açıklama\s*[:：]\s*(.+)/gis,
       // Not: ile başlayanlar
-      /(?:^|\n|\r\n)\s*Not\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+      /(?:^|\n|\r\n)\s*Not\s*[:：]\s*(.+)/gis,
       // Şerh: ile başlayanlar
-      /(?:^|\n|\r\n)\s*Şerh\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+      /(?:^|\n|\r\n)\s*Şerh\s*[:：]\s*(.+)/gis,
       // İzah: ile başlayanlar
-      /(?:^|\n|\r\n)\s*İzah\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+      /(?:^|\n|\r\n)\s*İzah\s*[:：]\s*(.+)/gis,
       // Dipnot: ile başlayanlar
-      /(?:^|\n|\r\n)\s*Dipnot\s*[:：]\s*(.+?)(?=\n\s*(?:Açıklama|Not|Şerh|İzah|Kaynak|Tahric|Ravi|Raviler|$)|$)/gis,
+      /(?:^|\n|\r\n)\s*Dipnot\s*[:：]\s*(.+)/gis,
     ];
 
     // Tüm açıklama pattern'lerini kontrol et
@@ -239,14 +260,33 @@ function extractExplanationFromTurkish(turkce: string): { cleanText: string; exp
         const lastMatch = matches[matches.length - 1];
         if (lastMatch && lastMatch[1]) {
           const explanationText = lastMatch[1].trim();
-          if (explanationText.length > 10) {
-            // Açıklamayı metinden çıkar
-            cleanText = turkce.replace(pattern, '').trim();
+          if (explanationText.length > 0) {
+            // Açıklamayı metinden çıkar - sonrasındaki TÜM metni al
+            const matchStart = turkce.indexOf(lastMatch[0]);
+            const beforeMatch = turkce.substring(0, matchStart).trim();
+            const afterMatch = turkce.substring(matchStart + lastMatch[0].length).trim();
+            
+            cleanText = beforeMatch;
+            extractedExplanation = afterMatch || explanationText;
+            
             // Eğer birden fazla eşleşme varsa, hepsini birleştir
             if (matches.length > 1) {
-              extractedExplanation = matches.map(m => m[1]?.trim()).filter(Boolean).join('\n\n');
-            } else {
-              extractedExplanation = explanationText;
+              extractedExplanation = matches.map((m, idx) => {
+                const startIdx = turkce.indexOf(m[0]);
+                const endIdx = startIdx + m[0].length;
+                if (m === lastMatch) {
+                  // Son eşleşme için sonrasındaki tüm metni al
+                  return turkce.substring(endIdx).trim();
+                } else {
+                  // Diğer eşleşmeler için sonraki eşleşmeye kadar al
+                  const nextMatch = matches.find(mm => mm !== m && turkce.indexOf(mm[0]) > startIdx);
+                  if (nextMatch) {
+                    const nextStart = turkce.indexOf(nextMatch[0]);
+                    return turkce.substring(endIdx, nextStart).trim();
+                  }
+                  return turkce.substring(endIdx).trim();
+                }
+              }).filter(Boolean).join('\n\n');
             }
             break; // İlk eşleşmede dur
           }
@@ -257,7 +297,7 @@ function extractExplanationFromTurkish(turkce: string): { cleanText: string; exp
 
   // Eğer açıklama bulunamadıysa, daha genel pattern'ler dene
   if (!extractedExplanation) {
-    // "Açıklama" kelimesi geçiyorsa ve sonrasında metin varsa
+    // "Açıklama" kelimesi geçiyorsa ve sonrasında metin varsa - TÜM metni al
     const generalPattern = /(?:^|\n|\r\n)\s*(?:Açıklama|AÇIKLAMA|Not|Şerh|İzah|Dipnot)\s*[:：]?\s*(.+)/gi;
     const match = turkce.match(generalPattern);
     if (match && match.length > 0) {
@@ -267,8 +307,8 @@ function extractExplanationFromTurkish(turkce: string): { cleanText: string; exp
         const beforeExplanation = turkce.substring(0, explanationStart).trim();
         const afterExplanation = turkce.substring(explanationStart + lastMatch.length).trim();
         
-        // Eğer açıklama kısmı yeterince uzunsa
-        if (afterExplanation.length > 10 || lastMatch.length > 20) {
+        // Açıklama kısmı varsa (uzunluk kontrolü kaldırıldı)
+        if (afterExplanation.length > 0 || lastMatch.length > 0) {
           cleanText = beforeExplanation;
           extractedExplanation = (lastMatch.replace(/^(?:Açıklama|AÇIKLAMA|Not|Şerh|İzah|Dipnot)\s*[:：]?\s*/i, '') + ' ' + afterExplanation).trim();
         }
@@ -423,14 +463,17 @@ function loadHadisData(): Hadis[] {
         if (index === 0) return false;
         // Gerçek hadis kayıtlarını filtrele - Türkçe metin içeren kayıtlar
         // Yapı: [id, arapca(1), turkce(2), aciklama(3), ..., kitapNo(6), bolumNo(7), hadisNo(8), ...]
-        if (!Array.isArray(item) || item.length <= 10) return false;
+        if (!Array.isArray(item) || item.length < 9) return false;
         
         const turkce = String(item[2] || '').trim();
-        // Türkçe metin boş olmamalı ve yeterince uzun olmalı
-        if (!turkce || turkce.length < 20) return false;
+        const arapca = String(item[1] || '').trim();
+        const aciklama = String(item[3] || '').trim();
+        
+        // En az bir alan dolu olmalı (turkce, arapca veya aciklama)
+        if (!turkce && !arapca && !aciklama) return false;
         
         // Sadece boşluk veya özel karakterlerden oluşan metinleri filtrele
-        if (/^[\s\W]*$/.test(turkce)) return false;
+        if (turkce && /^[\s\W]*$/.test(turkce) && !arapca && !aciklama) return false;
         
         return true;
       })
@@ -468,10 +511,24 @@ function loadHadisData(): Hadis[] {
         turkce = cleanedTurkceText;
         
         // Çıkarılan açıklamayı da temizle
-        let cleanedExtractedExplanation = extractedExplanation ? cleanHTMLPlaceholders(extractedExplanation) : '';
+        let cleanedExtractedExplanation = '';
+        if (extractedExplanation) {
+          const cleaned = cleanHTMLPlaceholders(extractedExplanation);
+          cleanedExtractedExplanation = cleaned.cleanText;
+          if (cleaned.extractedInfo) {
+            cleanedExtractedExplanation = `${cleaned.extractedInfo}\n\n${cleanedExtractedExplanation}`.trim();
+          }
+        }
         
         // Kaynak bilgilerini temizle
-        let cleanedSources = extractedSources ? cleanHTMLPlaceholders(extractedSources) : '';
+        let cleanedSources = '';
+        if (extractedSources) {
+          const cleaned = cleanHTMLPlaceholders(extractedSources);
+          cleanedSources = cleaned.cleanText;
+          if (cleaned.extractedInfo) {
+            cleanedSources = `${cleaned.extractedInfo}\n\n${cleanedSources}`.trim();
+          }
+        }
         
         // Açıklamaları birleştir (kaynak bilgilerini ve placeholder'lardan çıkarılan bilgileri de ekle)
         const explanationParts = [];
@@ -521,7 +578,14 @@ function loadHadisData(): Hadis[] {
         };
         return hadis;
       })
-      .filter((hadis) => hadis && hadis.turkce && hadis.turkce.trim().length > 10);
+      .filter((hadis) => {
+        // En az bir alan dolu olmalı
+        return hadis && (
+          (hadis.turkce && hadis.turkce.trim().length > 0) ||
+          (hadis.arapca && hadis.arapca.trim().length > 0) ||
+          (hadis.aciklama && hadis.aciklama.trim().length > 0)
+        );
+      });
     
     return hadisData;
   } catch (error) {
