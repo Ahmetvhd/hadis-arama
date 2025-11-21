@@ -512,12 +512,13 @@ async function loadHadisData(): Promise<Hadis[]> {
         // İlk kayıt bölüm başlıkları, onu atla
         if (index === 0) return false;
         // Gerçek hadis kayıtlarını filtrele - Türkçe metin içeren kayıtlar
-        // Yapı: [id, arapca(1), turkce(2), aciklama(3), ..., kitapNo(6), bolumNo(7), hadisNo(8), ...]
+        // Yapı: [id, arapca(1), turkce(2), boş(3), aciklama(4), boş(5), kitapNo(6), bolumNo(7), hadisNo(8), ...]
         if (!Array.isArray(item) || item.length < 9) return false;
         
         const turkce = String(item[2] || '').trim();
         const arapca = String(item[1] || '').trim();
-        const aciklama = String(item[3] || '').trim();
+        // Açıklama item[4] konumunda (item[3] boş olabilir)
+        const aciklama = String(item[4] || item[3] || '').trim();
         
         // En az bir alan dolu olmalı (turkce, arapca veya aciklama)
         if (!turkce && !arapca && !aciklama) return false;
