@@ -896,10 +896,22 @@ export async function GET(request: NextRequest) {
         score += 5;
       }
       
-      // Tam cümle eşleşmesi varsa ekstra bonus
+      // Tam cümle eşleşmesi varsa ekstra bonus (öncelikli)
       const fullQuery = normalizedQuery.replace(/\s+/g, ' ');
       if (turkceText.includes(fullQuery)) {
-        score += 15;
+        score += 50; // Cümle eşleşmesi için çok yüksek bonus
+      } else if (aciklamaText.includes(fullQuery)) {
+        score += 30; // Açıklamada cümle eşleşmesi
+      } else if (arapcaText.includes(fullQuery)) {
+        score += 20; // Arapça metinde cümle eşleşmesi
+      }
+      
+      // Kısmi cümle eşleşmesi (ardışık kelimeler)
+      if (queryWords.length > 1) {
+        const consecutiveWords = queryWords.slice(0, Math.min(3, queryWords.length)).join(' ');
+        if (turkceText.includes(consecutiveWords)) {
+          score += 25; // Ardışık kelimeler için bonus
+        }
       }
       
       return { hadis, score, matchedWords };
@@ -909,11 +921,17 @@ export async function GET(request: NextRequest) {
     filtered = hadisWithScores
       .filter(item => item.score > 0)
       .sort((a, b) => {
-        // Önce skora göre, sonra eşleşen kelime sayısına göre
+        // Önce skora göre, sonra eşleşen kelime sayısına göre, son olarak hadis numarasına göre
         if (b.score !== a.score) {
           return b.score - a.score;
         }
-        return b.matchedWords - a.matchedWords;
+        if (b.matchedWords !== a.matchedWords) {
+          return b.matchedWords - a.matchedWords;
+        }
+        // Hadis numarasına göre sayısal sıralama
+        const aNo = parseInt(a.hadis.hadisNo || '0', 10);
+        const bNo = parseInt(b.hadis.hadisNo || '0', 10);
+        return aNo - bNo;
       })
       .map(item => item.hadis);
   }
@@ -957,7 +975,15 @@ export async function GET(request: NextRequest) {
     
     filtered = hadisWithPriority
       .filter(item => item.match)
-      .sort((a, b) => b.priority - a.priority)
+      .sort((a, b) => {
+        // Önce önceliğe göre, sonra hadis numarasına göre
+        if (b.priority !== a.priority) {
+          return b.priority - a.priority;
+        }
+        const aNo = parseInt(a.hadis.hadisNo || '0', 10);
+        const bNo = parseInt(b.hadis.hadisNo || '0', 10);
+        return aNo - bNo;
+      })
       .map(item => item.hadis);
   }
 
@@ -990,8 +1016,25 @@ export async function GET(request: NextRequest) {
     
     filtered = hadisWithPriority
       .filter(item => item.match)
-      .sort((a, b) => b.priority - a.priority)
+      .sort((a, b) => {
+        // Önce önceliğe göre, sonra hadis numarasına göre
+        if (b.priority !== a.priority) {
+          return b.priority - a.priority;
+        }
+        const aNo = parseInt(a.hadis.hadisNo || '0', 10);
+        const bNo = parseInt(b.hadis.hadisNo || '0', 10);
+        return aNo - bNo;
+      })
       .map(item => item.hadis);
+  }
+
+  // Tüm filtrelerden sonra hadis numarasına göre sırala (eğer özel sıralama yoksa)
+  if (!query && !alim && !kategori) {
+    filtered = filtered.sort((a, b) => {
+      const aNo = parseInt(a.hadisNo || '0', 10);
+      const bNo = parseInt(b.hadisNo || '0', 10);
+      return aNo - bNo;
+    });
   }
 
   // Sayfalama

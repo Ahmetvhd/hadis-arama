@@ -255,12 +255,6 @@ export default function HadisCard({ hadis, searchQuery }: HadisCardProps) {
               />
             </CardTitle>
             <div className="flex flex-wrap gap-2 mt-2">
-              {hadis.kitapNo && (
-                <Badge variant="secondary" className="bg-[#d1ad3c] text-black">Kitap: {hadis.kitapNo}</Badge>
-              )}
-              {hadis.bolumNo && (
-                <Badge variant="secondary" className="bg-[#d1ad3c] text-black">Bölüm: {hadis.bolumNo}</Badge>
-              )}
               {hadis.hadisNo && (
                 <Badge variant="outline" className="border-[#d1ad3c] text-[#d1ad3c]">Hadis No: {hadis.hadisNo}</Badge>
               )}
