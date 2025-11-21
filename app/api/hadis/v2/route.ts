@@ -291,10 +291,14 @@ export async function GET(request: NextRequest) {
       limit,
       totalPages: Math.ceil(filtered.length / limit),
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('API hatası:', error);
     return NextResponse.json(
-      { error: 'Veri yüklenirken hata oluştu' },
+      { 
+        error: 'Veri yüklenirken hata oluştu',
+        message: error?.message || 'Bilinmeyen hata',
+        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     );
   }
