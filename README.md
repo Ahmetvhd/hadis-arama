@@ -2,6 +2,12 @@
 
 Next.js ve shadcn/ui kullanılarak geliştirilmiş güçlü hadis arama uygulaması.
 
+## 🌐 Canlı Demo
+
+**Web Sitesi:** [https://hadis-arama.vercel.app](https://hadis-arama.vercel.app)
+
+**GitHub Repository:** [https://github.com/Ahmetvhd/hadis-arama](https://github.com/Ahmetvhd/hadis-arama)
+
 ## Özellikler
 
 - 🔍 **Gelişmiş Arama Motoru**: 
