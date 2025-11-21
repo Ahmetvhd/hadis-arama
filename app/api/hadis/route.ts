@@ -891,13 +891,24 @@ export async function GET(request: NextRequest) {
         const hadisNo = String(hadis.hadisNo || '').trim();
         const hadisId = String(hadis.id || '').trim();
         
-        // Tam eşleşme için çok yüksek skor
+        // Sayısal karşılaştırma için sayıya çevir
+        const searchNo = parseInt(hadisNoToSearch, 10);
+        const hadisNoNum = parseInt(hadisNo, 10);
+        const hadisIdNum = parseInt(hadisId, 10);
+        
+        // Tam sayısal eşleşme (sadece tam eşleşme, substring değil)
+        if (!isNaN(searchNo)) {
+          if (!isNaN(hadisNoNum) && hadisNoNum === searchNo) {
+            return { hadis, score: 10000, matchedWords: queryWords.length };
+          }
+          if (!isNaN(hadisIdNum) && hadisIdNum === searchNo) {
+            return { hadis, score: 10000, matchedWords: queryWords.length };
+          }
+        }
+        
+        // String tam eşleşme (sayıya çevrilemezse)
         if (hadisNo === hadisNoToSearch || hadisId === hadisNoToSearch) {
           return { hadis, score: 10000, matchedWords: queryWords.length };
-        }
-        // Kısmi eşleşme için yüksek skor
-        if (hadisNo.includes(hadisNoToSearch) || hadisId.includes(hadisNoToSearch)) {
-          return { hadis, score: 5000, matchedWords: queryWords.length };
         }
       }
       
