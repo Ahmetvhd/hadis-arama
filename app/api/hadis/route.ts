@@ -17,6 +17,8 @@ interface Hadis {
 
 let hadisData: Hadis[] | null = null;
 let bolumBasliklari: Map<string, string> | null = null;
+let rawDataCache: any[][] | null = null;
+let isDownloading = false;
 
 // Türkçe karakter normalizasyonu
 function normalizeText(text: string): string {
@@ -417,23 +419,71 @@ function detectHadisHukmu(turkce: string, aciklama: string, bolumBaslik: string)
 }
 
 
-function loadHadisData(): Hadis[] {
+async function downloadHadisDataFromRelease(): Promise<any[][]> {
+  // Cache varsa onu kullan
+  if (rawDataCache) {
+    return rawDataCache;
+  }
+
+  // Zaten indiriliyorsa bekle
+  if (isDownloading) {
+    // İndirme tamamlanana kadar bekle (max 60 saniye)
+    let waitCount = 0;
+    while (isDownloading && waitCount < 120) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      waitCount++;
+      if (rawDataCache) {
+        return rawDataCache;
+      }
+    }
+  }
+
+  isDownloading = true;
+  const releaseUrl = 'https://github.com/Ahmetvhd/hadis-arama/releases/download/v1.0/hadisler.json';
+  
+  try {
+    console.log('GitHub Release\'den hadisler.json indiriliyor...');
+    const response = await fetch(releaseUrl);
+    
+    if (!response.ok) {
+      throw new Error(`GitHub Release'den indirme başarısız: ${response.status} ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('hadisler.json başarıyla indirildi,', data.length, 'kayıt yüklendi');
+    
+    // Cache'e kaydet
+    rawDataCache = data;
+    isDownloading = false;
+    return data;
+  } catch (error) {
+    isDownloading = false;
+    console.error('GitHub Release\'den indirme hatası:', error);
+    throw error;
+  }
+}
+
+async function loadHadisData(): Promise<Hadis[]> {
   if (hadisData) {
     return hadisData;
   }
 
   try {
-    // hadisler.json dosyasını kullan
+    let rawData: any[][];
+    
+    // Önce local dosyayı kontrol et (development için)
     const hadislerJsonPath = path.join(process.cwd(), 'hadisler.json');
     
-    if (!fs.existsSync(hadislerJsonPath)) {
-      console.error('hadisler.json dosyası bulunamadı:', hadislerJsonPath);
-      return [];
+    if (fs.existsSync(hadislerJsonPath)) {
+      // Local dosya varsa onu kullan (development)
+      console.log('Local hadisler.json dosyası kullanılıyor');
+      const fileContent = fs.readFileSync(hadislerJsonPath, 'utf-8');
+      rawData = JSON.parse(fileContent);
+    } else {
+      // Production'da GitHub Release'den indir
+      console.log('Local dosya bulunamadı, GitHub Release\'den indiriliyor...');
+      rawData = await downloadHadisDataFromRelease();
     }
-    
-    // Dosyayı oku
-    const fileContent = fs.readFileSync(hadislerJsonPath, 'utf-8');
-    const rawData: any[][] = JSON.parse(fileContent);
     
     if (!Array.isArray(rawData) || rawData.length === 0) {
       console.error('hadisler.json dosyası geçersiz format');
@@ -658,7 +708,7 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '20');
 
-  const allHadis = loadHadisData();
+  const allHadis = await loadHadisData();
   
   // Alimler listesi isteniyorsa
   if (listAlimler) {
