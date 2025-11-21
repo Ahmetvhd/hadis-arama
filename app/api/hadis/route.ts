@@ -884,117 +884,130 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Her hadis için relevance skoru hesapla
-    const hadisWithScores = filtered.map((hadis) => {
-      // Hadis numarası araması - öncelikli kontrol
-      if (isHadisNoSearch && hadisNoToSearch) {
-        const hadisNo = String(hadis.hadisNo || '').trim();
-        const hadisId = String(hadis.id || '').trim();
-        
-        // Sayısal karşılaştırma için sayıya çevir
-        const searchNo = parseInt(hadisNoToSearch, 10);
-        const hadisNoNum = parseInt(hadisNo, 10);
-        const hadisIdNum = parseInt(hadisId, 10);
-        
-        // Tam sayısal eşleşme (sadece tam eşleşme, substring değil)
-        if (!isNaN(searchNo)) {
+    // Eğer hadis numarası araması yapılıyorsa, sadece hadis numarasına göre filtrele
+    if (isHadisNoSearch && hadisNoToSearch) {
+      const searchNo = parseInt(hadisNoToSearch, 10);
+      
+      if (!isNaN(searchNo)) {
+        // Sadece tam sayısal eşleşme yapan hadisleri filtrele
+        filtered = filtered.filter((hadis) => {
+          const hadisNo = String(hadis.hadisNo || '').trim();
+          const hadisId = String(hadis.id || '').trim();
+          
+          const hadisNoNum = parseInt(hadisNo, 10);
+          const hadisIdNum = parseInt(hadisId, 10);
+          
+          // Tam sayısal eşleşme kontrolü
           if (!isNaN(hadisNoNum) && hadisNoNum === searchNo) {
-            return { hadis, score: 10000, matchedWords: queryWords.length };
+            return true;
           }
           if (!isNaN(hadisIdNum) && hadisIdNum === searchNo) {
-            return { hadis, score: 10000, matchedWords: queryWords.length };
+            return true;
+          }
+          
+          // String tam eşleşme (sayıya çevrilemezse)
+          if (hadisNo === hadisNoToSearch || hadisId === hadisNoToSearch) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        // Hadis numarasına göre sırala
+        filtered = filtered.sort((a, b) => {
+          const aNo = parseInt(a.hadisNo || '0', 10);
+          const bNo = parseInt(b.hadisNo || '0', 10);
+          return aNo - bNo;
+        });
+      }
+    } else {
+      // Normal metin araması
+      // Her hadis için relevance skoru hesapla
+      const hadisWithScores = filtered.map((hadis) => {
+        const turkceText = prepareSearchText(hadis.turkce);
+        const arapcaText = prepareSearchText(hadis.arapca);
+        const bolumText = prepareSearchText(hadis.bolumBaslik);
+        const aciklamaText = prepareSearchText(hadis.aciklama);
+        
+        let score = 0;
+        let matchedWords = 0;
+        
+        // Her kelime için skor hesapla
+        for (const word of queryWords) {
+          let wordScore = 0;
+          
+          // Türkçe metinde tam eşleşme (en yüksek skor)
+          if (turkceText.includes(word)) {
+            const index = turkceText.indexOf(word);
+            // Başta geçiyorsa daha yüksek skor
+            wordScore += index < 50 ? 10 : 5;
+          }
+          
+          // Bölüm başlığında geçiyorsa
+          if (bolumText.includes(word)) {
+            wordScore += 8;
+          }
+          
+          // Açıklamada geçiyorsa
+          if (aciklamaText.includes(word)) {
+            wordScore += 3;
+          }
+          
+          // Arapça metinde geçiyorsa
+          if (arapcaText.includes(word)) {
+            wordScore += 2;
+          }
+          
+          if (wordScore > 0) {
+            score += wordScore;
+            matchedWords++;
           }
         }
         
-        // String tam eşleşme (sayıya çevrilemezse)
-        if (hadisNo === hadisNoToSearch || hadisId === hadisNoToSearch) {
-          return { hadis, score: 10000, matchedWords: queryWords.length };
-        }
-      }
-      
-      const turkceText = prepareSearchText(hadis.turkce);
-      const arapcaText = prepareSearchText(hadis.arapca);
-      const bolumText = prepareSearchText(hadis.bolumBaslik);
-      const aciklamaText = prepareSearchText(hadis.aciklama);
-      
-      let score = 0;
-      let matchedWords = 0;
-      
-      // Her kelime için skor hesapla
-      for (const word of queryWords) {
-        let wordScore = 0;
-        
-        // Türkçe metinde tam eşleşme (en yüksek skor)
-        if (turkceText.includes(word)) {
-          const index = turkceText.indexOf(word);
-          // Başta geçiyorsa daha yüksek skor
-          wordScore += index < 50 ? 10 : 5;
+        // Tüm kelimeler eşleştiyse bonus skor
+        if (matchedWords === queryWords.length && queryWords.length > 1) {
+          score += 5;
         }
         
-        // Bölüm başlığında geçiyorsa
-        if (bolumText.includes(word)) {
-          wordScore += 8;
+        // Tam cümle eşleşmesi varsa ekstra bonus (öncelikli)
+        const fullQuery = normalizedQuery.replace(/\s+/g, ' ');
+        if (turkceText.includes(fullQuery)) {
+          score += 50; // Cümle eşleşmesi için çok yüksek bonus
+        } else if (aciklamaText.includes(fullQuery)) {
+          score += 30; // Açıklamada cümle eşleşmesi
+        } else if (arapcaText.includes(fullQuery)) {
+          score += 20; // Arapça metinde cümle eşleşmesi
         }
         
-        // Açıklamada geçiyorsa
-        if (aciklamaText.includes(word)) {
-          wordScore += 3;
+        // Kısmi cümle eşleşmesi (ardışık kelimeler)
+        if (queryWords.length > 1) {
+          const consecutiveWords = queryWords.slice(0, Math.min(3, queryWords.length)).join(' ');
+          if (turkceText.includes(consecutiveWords)) {
+            score += 25; // Ardışık kelimeler için bonus
+          }
         }
         
-        // Arapça metinde geçiyorsa
-        if (arapcaText.includes(word)) {
-          wordScore += 2;
-        }
-        
-        if (wordScore > 0) {
-          score += wordScore;
-          matchedWords++;
-        }
-      }
+        return { hadis, score, matchedWords };
+      });
       
-      // Tüm kelimeler eşleştiyse bonus skor
-      if (matchedWords === queryWords.length && queryWords.length > 1) {
-        score += 5;
-      }
-      
-      // Tam cümle eşleşmesi varsa ekstra bonus (öncelikli)
-      const fullQuery = normalizedQuery.replace(/\s+/g, ' ');
-      if (turkceText.includes(fullQuery)) {
-        score += 50; // Cümle eşleşmesi için çok yüksek bonus
-      } else if (aciklamaText.includes(fullQuery)) {
-        score += 30; // Açıklamada cümle eşleşmesi
-      } else if (arapcaText.includes(fullQuery)) {
-        score += 20; // Arapça metinde cümle eşleşmesi
-      }
-      
-      // Kısmi cümle eşleşmesi (ardışık kelimeler)
-      if (queryWords.length > 1) {
-        const consecutiveWords = queryWords.slice(0, Math.min(3, queryWords.length)).join(' ');
-        if (turkceText.includes(consecutiveWords)) {
-          score += 25; // Ardışık kelimeler için bonus
-        }
-      }
-      
-      return { hadis, score, matchedWords };
-    });
-    
-    // Sadece eşleşen hadisleri filtrele ve skora göre sırala
-    filtered = hadisWithScores
-      .filter(item => item.score > 0)
-      .sort((a, b) => {
-        // Önce skora göre, sonra eşleşen kelime sayısına göre, son olarak hadis numarasına göre
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-        if (b.matchedWords !== a.matchedWords) {
-          return b.matchedWords - a.matchedWords;
-        }
-        // Hadis numarasına göre sayısal sıralama
-        const aNo = parseInt(a.hadis.hadisNo || '0', 10);
-        const bNo = parseInt(b.hadis.hadisNo || '0', 10);
-        return aNo - bNo;
-      })
-      .map(item => item.hadis);
+      // Sadece eşleşen hadisleri filtrele ve skora göre sırala
+      filtered = hadisWithScores
+        .filter(item => item.score > 0)
+        .sort((a, b) => {
+          // Önce skora göre, sonra eşleşen kelime sayısına göre, son olarak hadis numarasına göre
+          if (b.score !== a.score) {
+            return b.score - a.score;
+          }
+          if (b.matchedWords !== a.matchedWords) {
+            return b.matchedWords - a.matchedWords;
+          }
+          // Hadis numarasına göre sayısal sıralama
+          const aNo = parseInt(a.hadis.hadisNo || '0', 10);
+          const bNo = parseInt(b.hadis.hadisNo || '0', 10);
+          return aNo - bNo;
+        })
+        .map(item => item.hadis);
+    }
   }
 
   // Kitap filtresi
